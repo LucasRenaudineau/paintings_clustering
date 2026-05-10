@@ -1,24 +1,24 @@
 import numpy as np
+import cv2
 import tensorflow as tf
 from tensorflow.keras.applications import ResNet50
 from tensorflow.keras.applications.resnet50 import preprocess_input
 from tensorflow.keras.models import Model
  
-from resize import pad_to_square
+from resize import *
  
 # Constants
  
 MODEL_PATH = "./models/resnet50.keras"
-INPUT_SHAPE = (224, 224)  # ResNet50 input size
+INPUT_SHAPE = (224, 224) # ResNet50 input size
  
 # Intermediate layers whose activations we want to extract.
 FEATURE_LAYER_NAMES = [
-    "conv1_relu",          # Stage 1 — low-level edges & textures
-    "conv2_block3_out",    # Stage 2 — simple shapes
-    "conv3_block4_out",    # Stage 3 — mid-level patterns
-    "conv4_block6_out",    # Stage 4 — high-level semantics
-    "conv5_block3_out",    # Stage 5 — near-final representations
-    "avg_pool",            # Global average pool — compact descriptor
+    "conv1_relu", # Stage 1 — low-level edges & textures
+    "conv2_block3_out", # Stage 2 — simple shapes
+    "conv3_block4_out", # Stage 3 — mid-level patterns
+    "conv4_block6_out", # Stage 4 — high-level semantics
+    "conv5_block3_out", # Stage 5 — near-final representations
 ]
  
 # Load model
@@ -67,5 +67,37 @@ def resize_image(image: np.ndarray) -> np.ndarray:
     batched = np.expand_dims(resized, axis=0) # adding batch dimension : (1, 224, 224, 3)
     return preprocess_input(batched) # applying resnet50 preprocessing
 
+# Features extraction
+
+def extract_features(image: np.ndarray, feature_model: Model) -> dict[str, np.ndarray]:
+    """
+    Run a single image through the multi-output feature model and return the
+    activation maps of every intermediate layer.
+ 
+    Args:
+        image: Raw image as a NumPy array (H, W, 3), BGR uint8.
+        feature_model: The multi-output Keras Model returned by load_model().
+ 
+    Returns:
+        Dictionary mapping each layer name to its activation NumPy array.
+        Shapes (with default FEATURE_LAYER_NAMES):
+            "conv1_relu" -> (1, 112, 112, 64)
+            "conv2_block3_out" -> (1, 56, 56, 256)
+            "conv3_block4_out" -> (1, 28, 28, 512)
+            "conv4_block6_out" -> (1, 14, 14, 1024)
+            "conv5_block3_out" -> (1, 7, 7, 2048)
+            "avg_pool" -> (1, 2048)
+    """
+    preprocessed = resize_image(image)
+    activations = feature_model.predict(preprocessed, verbose=0)
+ 
+    return {layer_name: activation for layer_name, activation in zip(FEATURE_LAYER_NAMES, activations)}
+
 if __name__ == "__main__":
-    base_model, feature_model = load_model()
+    _, feature_model = load_model()
+    test_path = "ArtemisArt/afro - afro-basaldella_1912/afro_1.jpg"
+    img = imread_safe(test_path)
+    features = extract_features(img, feature_model)
+    print("Features shapes :")
+    for layer, activation in features.items():
+        print(f"{layer:25s} -> {str(activation.shape)}")
