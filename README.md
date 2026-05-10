@@ -8,3 +8,6 @@ Paintings are situated at ./ArtemisArt/
 
 ## Models
 Models are loaded at ./models/
+
+## Outputs
+Outputs for examples and showcases are sent to ./outputs/
