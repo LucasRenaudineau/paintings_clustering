@@ -10,7 +10,6 @@ from resize import *
 # Constants
  
 MODEL_PATH = "./models/resnet50.keras"
-INPUT_SHAPE = (224, 224) # ResNet50 input size
  
 # Intermediate layers whose activations we want to extract.
 FEATURE_LAYER_NAMES = [
@@ -47,25 +46,10 @@ def load_model() -> tuple[Model, Model]:
  
     return base_model, feature_model
 
-# Image preprocessing
- 
-def resize_image(image: np.ndarray) -> np.ndarray:
-    """
-    Pad then resize a BGR image to the 224x224 input size expected by ResNet50.
- 
-    Args:
-        image: NumPy array of shape (H, W, 3), BGR uint8.
-               The longest dimension must be 1800px.
- 
-    Returns:
-        NumPy array of shape (1, 224, 224, 3), float32, ready for inference.
-    """
-    squared = pad_to_square(image)
-    rgb = squared[:, :, ::-1]
-    resized = tf.image.resize(rgb, INPUT_SHAPE).numpy().astype(np.float32) # resized to 224*224
- 
-    batched = np.expand_dims(resized, axis=0) # adding batch dimension : (1, 224, 224, 3)
-    return preprocess_input(batched) # applying resnet50 preprocessing
+
+
+
+
 
 # Features extraction
 
