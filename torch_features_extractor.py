@@ -34,7 +34,9 @@ def load_model():
                        every layer listed in FEATURE_LAYER_NAMES.
     """
     try:
-        model = torch.load(MODEL_PATH)
+        weights_dict = torch.load(MODEL_PATH)
+        model = models.resnet50(weights=weights_dict)
+        model.fc = nn.Identity()
         print(f"Loaded ResNet50 from {MODEL_PATH}")
     except (OSError, IOError, ValueError):
         print(f"No saved model found at {MODEL_PATH}. Downloading ResNet50 with ImageNet weights.")
@@ -42,6 +44,7 @@ def load_model():
         model.fc = nn.Identity() # include_top=False
         torch.save(model.state_dict(), MODEL_PATH)
         print(f"Model saved to {MODEL_PATH}")
+    model=model.to(device)
     model.eval()
     feature_model = create_feature_extractor(model, return_nodes=FEATURE_LAYER_NAMES)
     feature_model.eval()
@@ -59,6 +62,11 @@ def extract_features(image, feature_model):
  
     Returns:
         Dictionary mapping each layer name to its activation NumPy array.
+        conv1_relu                -> (1, 1, 112, 64)
+        conv2_block3_out          -> (1, 1, 56, 256)
+        conv3_block4_out          -> (1, 1, 28, 512)
+        conv4_block6_out          -> (1, 1, 14, 1024)
+        conv5_block3_out          -> (1, 1, 7, 2048)
     """
     # Used AI in this function to help me convert it for pytorch
     preprocessed = resize_image(image)
@@ -69,7 +77,7 @@ def extract_features(image, feature_model):
 
     # Normalize
     tensor_img = tensor_img / 255.0
-    tensor_img = F.normalize(tensor_img, mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    tensor_img = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(tensor_img)
     tensor_img = tensor_img.unsqueeze(0)
     tensor_img=tensor_img.to(device)
 
@@ -78,7 +86,7 @@ def extract_features(image, feature_model):
     numpy_activations = {}
     for layer_name, tensor in activations.items():
         # Go back to (1,H,W,C)
-        numpy_activations[layer_name] = tensor.cpu().numpy().transpose(0, 2, 3, 1)
+        numpy_activations[layer_name] = tensor.cpu().detach().numpy().transpose(0, 2, 3, 1)
  
     return numpy_activations
 
