@@ -35,13 +35,11 @@ def pad_to_square(image: np.ndarray) -> np.ndarray:
     if w < h:
         # Portrait: copy leftmost (target - w) columns and append on the right
         pad = target - w
-        fill = image[:, :pad]
-        return np.concatenate([image, fill], axis=1)
+        return cv2.copyMakeBorder(image, 0,0,0,pad,borderType=cv2.BORDER_REFLECT101)    # 101 for "don't repeat the pixel at the border
     else:
         # Landscape: copy topmost (target - h) rows and append at the bottom
         pad = target - h
-        fill = image[:pad, :]
-        return np.concatenate([image, fill], axis=0)
+        return cv2.copyMakeBorder(image, 0,pad,0,0,borderType=cv2.BORDER_REFLECT101) 
 
 
 # Image preprocessing
@@ -59,6 +57,8 @@ def resize_image(image: np.ndarray) -> np.ndarray:
     """
     squared = pad_to_square(image)
     rgb = squared[:, :, ::-1]      # Convert from BGR to RGB (::-1 to read in the opposite direction)
+    
+    # IS TENSORFLOW THE BEST FUNCTION ? 
     resized = tf.image.resize(rgb, INPUT_SHAPE).numpy().astype(np.float32) # resized to 224*224
  
     batched = np.expand_dims(resized, axis=0) # adding batch dimension : (1, 224, 224, 3)
@@ -72,4 +72,8 @@ if __name__ == "__main__":
     img = imread_safe("ArtemisArt/afro - afro-basaldella_1912/afro_1.jpg")
     squared_image = pad_to_square(img)
     cv2.imwrite("outputs/afro_1_squared.jpg", squared_image)
+    
+    img = imread_safe("ArtemisArt/bernard - emile-bernard_1868/bernard_21.jpg")
+    squared_image = pad_to_square(img)
+    cv2.imwrite("outputs/bernard_21.jpg", squared_image)
 
