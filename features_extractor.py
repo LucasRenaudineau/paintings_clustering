@@ -1,28 +1,29 @@
+"""Same file as features extractor but using PyTorch."""
+
 import numpy as np
 import cv2
-import tensorflow as tf
-from tensorflow.keras.applications import ResNet50
-from tensorflow.keras.applications.resnet50 import preprocess_input
-from tensorflow.keras.models import Model
- 
-from resize import *
- 
-# Constants
- 
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from torchvision import transforms, models
+from torchvision.models.feature_extraction import create_feature_extractor
+
+from preprocessing import *
+
 MODEL_PATH = "./models/resnet50.keras"
- 
-# Intermediate layers whose activations we want to extract.
-FEATURE_LAYER_NAMES = [
-    "conv1_relu", # Stage 1 — low-level edges & textures
-    "conv2_block3_out", # Stage 2 — simple shapes
-    "conv3_block4_out", # Stage 3 — mid-level patterns
-    "conv4_block6_out", # Stage 4 — high-level semantics
-    "conv5_block3_out", # Stage 5 — near-final representations
-]
- 
-# Load model
- 
-def load_model() -> tuple[Model, Model]:
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Used ai to know the corresponding names for pytorch
+FEATURE_LAYER_NAMES = {
+    "relu": "conv1_relu",             # Stage 1 — low-level edges & textures
+    "layer1.2": "conv2_block3_out",   # Stage 2 — simple shapes (fin du 3e bloc)
+    "layer2.3": "conv3_block4_out",   # Stage 3 — mid-level patterns (fin du 4e bloc)
+    "layer3.5": "conv4_block6_out",   # Stage 4 — high-level semantics (fin du 6e bloc)
+    "layer4.2": "conv5_block3_out",   # Stage 5 — near-final representations (fin du 3e bloc)
+}
+
+def load_model():
     """
     Load ResNet50 from ./models/resnet50 if it exists, otherwise download the
     ImageNet weights and save them there for future runs.
@@ -33,27 +34,24 @@ def load_model() -> tuple[Model, Model]:
                        every layer listed in FEATURE_LAYER_NAMES.
     """
     try:
-        base_model = tf.keras.models.load_model(MODEL_PATH)
+        weights_dict = torch.load(MODEL_PATH)
+        model = models.resnet50(weights=weights_dict)
+        model.fc = nn.Identity()
         print(f"Loaded ResNet50 from {MODEL_PATH}")
     except (OSError, IOError, ValueError):
         print(f"No saved model found at {MODEL_PATH}. Downloading ResNet50 with ImageNet weights.")
-        base_model = ResNet50(weights="imagenet", include_top=False) # We don't need the classifying layers
-        base_model.save(MODEL_PATH)
+        model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
+        model.fc = nn.Identity() # include_top=False
+        torch.save(model.state_dict(), MODEL_PATH)
         print(f"Model saved to {MODEL_PATH}")
- 
-    outputs = [base_model.get_layer(name).output for name in FEATURE_LAYER_NAMES]
-    feature_model = Model(inputs=base_model.input, outputs=outputs)
- 
-    return base_model, feature_model
+    model=model.to(device)
+    model.eval()
+    feature_model = create_feature_extractor(model, return_nodes=FEATURE_LAYER_NAMES)
+    feature_model.eval()
 
+    return model, feature_model
 
-
-
-
-
-# Features extraction
-
-def extract_features(image: np.ndarray, feature_model: Model) -> dict[str, np.ndarray]:
+def extract_features(image, feature_model):
     """
     Run a single image through the multi-output feature model and return the
     activation maps of every intermediate layer.
@@ -64,18 +62,24 @@ def extract_features(image: np.ndarray, feature_model: Model) -> dict[str, np.nd
  
     Returns:
         Dictionary mapping each layer name to its activation NumPy array.
-        Shapes (with default FEATURE_LAYER_NAMES):
-            "conv1_relu" -> (1, 112, 112, 64)
-            "conv2_block3_out" -> (1, 56, 56, 256)
-            "conv3_block4_out" -> (1, 28, 28, 512)
-            "conv4_block6_out" -> (1, 14, 14, 1024)
-            "conv5_block3_out" -> (1, 7, 7, 2048)
-            "avg_pool" -> (1, 2048)
+        conv1_relu                -> (1, 112, 112, 64)
+        conv2_block3_out          -> (1, 56, 56, 256)
+        conv3_block4_out          -> (1, 28, 28, 512)
+        conv4_block6_out          -> (1, 14, 14, 1024)
+        conv5_block3_out          -> (1, 7, 7, 2048)
     """
-    preprocessed = resize_image(image)
-    activations = feature_model.predict(preprocessed, verbose=0)
+    
+    tensor_preprocess_image = preprocessing_image(image)
+    tensor_preprocess_image=tensor_preprocess_image.to(device)
+
+    torch.no_grad()
+    activations = feature_model(tensor_preprocess_image)
+    numpy_activations = {}
+    for layer_name, tensor in activations.items():
+        # Go back to (1,H,W,C)
+        numpy_activations[layer_name] = tensor.cpu().detach().numpy().transpose(0, 2, 3, 1)
  
-    return {layer_name: activation for layer_name, activation in zip(FEATURE_LAYER_NAMES, activations)}
+    return numpy_activations
 
 if __name__ == "__main__":
     _, feature_model = load_model()
@@ -85,3 +89,7 @@ if __name__ == "__main__":
     print("Features shapes :")
     for layer, activation in features.items():
         print(f"{layer:25s} -> {str(activation.shape)}")
+
+
+
+
