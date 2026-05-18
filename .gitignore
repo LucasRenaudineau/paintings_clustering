@@ -222,7 +222,7 @@ models/
 outputs/
 ArtemisArt.7z
 Liste-peintres-Artemisart.pdf
-
+*.png
 
 
 # Notes de réunions et documentation
