@@ -9,6 +9,7 @@ from torchvision.models.feature_extraction import create_feature_extractor
 from archetypes import AA
 from preprocessing import *
 from glob import glob
+import gc
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # We use vgg19_bn instead of vgg19 since it is better
@@ -26,20 +27,8 @@ return_nodes = {
 
 feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
 
-paths = glob("ArtemisArt/delacroix*/*.jpg")
+paths = glob("ArtemisArt/[A-P-p]*/*.jpg")
 print(f"Il y a {len(paths)} images dans le dataset")
-feature_maps_list = []
-for path in paths:
-    img = imread_safe(path)
-    print(f"Taking features from {path}")
-    """This code is taken from features_extractor.py"""
-    with torch.no_grad():
-        preprocess_img = preprocessing_image(img)
-        tensor_img = preprocess_img.to(device)
-        feature_maps = feature_extractor(tensor_img).values()
-        # print(feature_maps)
-        # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
-        feature_maps_list.append(feature_maps)
 
 
 class ArchetypeGenerator:
@@ -47,27 +36,43 @@ class ArchetypeGenerator:
         self.k = nb_archetypes
         self.archetype = AA(nb_archetypes)
 
-    def find_archetypes(self, feature_maps_list):
+    def find_archetypes(self, data_path):
         transformed_features = []
-        for i, feature_maps in enumerate(feature_maps_list):
-            print(f"Transforming data n°{i}")
-            x_raw_list = []
-            for torch_f_map in feature_maps:
-                f_map = torch_f_map.detach().cpu().float().numpy()[0]
-                f_map = f_map.reshape(f_map.shape[0], f_map.shape[1] * f_map.shape[2])
-                p, m = f_map.shape[0], f_map.shape[1]
-                # print(f"THE VALUE OF p IS {p} !!!!!!!")
-                mu = np.mean(f_map, axis=1).reshape(-1, 1)
-                # print(f"f_map shape: {f_map.shape}")
-                # print(f"mu shape: {mu.shape}")
-                sigma = (f_map - mu) @ (f_map - mu).T / m
-                mu = mu / (p * (p - 1))
-                sigma = sigma / (p * (p - 1))
-                sigma_flat = sigma.flatten()
-                # print(f"The shape of sigma_flat is : {sigma_flat.shape}")
-                x_raw = np.concatenate([mu, sigma_flat.reshape(-1, 1)])
-                # print(f"shape of x_raw : {x_raw.shape}")
-                x_raw_list.append(x_raw)
+        for i, path in enumerate(data_path):
+            with torch.no_grad():
+                img = imread_safe(path)
+                print(f"Taking features from {path}")
+                """This code is taken from features_extractor.py"""
+                preprocess_img = preprocessing_image(img)
+                tensor_img = preprocess_img.to(device)
+                feature_maps = feature_extractor(tensor_img).values()
+                # print(feature_maps)
+                # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
+                print(f"Transforming data n°{i}")
+                x_raw_list = []
+                for torch_f_map in feature_maps:
+                    f_map = torch_f_map.detach().cpu().float().numpy()[0]
+                    f_map = f_map.reshape(
+                        f_map.shape[0], f_map.shape[1] * f_map.shape[2]
+                    )
+                    p, m = f_map.shape[0], f_map.shape[1]
+                    # print(f"THE VALUE OF p IS {p} !!!!!!!")
+                    mu = np.mean(f_map, axis=1).reshape(-1, 1)
+                    # print(f"f_map shape: {f_map.shape}")
+                    # print(f"mu shape: {mu.shape}")
+                    sigma = (f_map - mu) @ (f_map - mu).T / m
+                    mu = mu / (p * (p - 1))
+                    sigma = sigma / (p * (p - 1))
+                    sigma_flat = sigma.flatten()
+                    # print(f"The shape of sigma_flat is : {sigma_flat.shape}")
+                    x_raw = np.concatenate([mu, sigma_flat.reshape(-1, 1)])
+                    # print(f"shape of x_raw : {x_raw.shape}")
+                    x_raw_list.append(x_raw)
+                del img, preprocess_img, tensor_img, feature_maps
+                if i % 10 == 0:
+                    gc.collect()
+                    if device.type == "cuda":
+                        torch.cuda.empty_cache()
             # print(len(x_raw_list))
             # print(f"Shape of the x_raw_list : {np.concatenate(x_raw_list).shape}")
             U, S, VH = np.linalg.svd(np.concatenate(x_raw_list), full_matrices=False)
@@ -93,7 +98,7 @@ class ArchetypeGenerator:
 
 
 a = ArchetypeGenerator(4)
-A, B, Z = a.find_archetypes(feature_maps_list)
+A, B, Z = a.find_archetypes(paths)
 
 print(f"Voila la forme de A : {A}\n")
 print(f"Voila la forme de B : {B}\n")
