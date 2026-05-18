@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torchvision import transforms, models
 from torchvision.models.feature_extraction import create_feature_extractor
 from archetypes import AA
-from resize import *
+from preprocessing import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # We use vgg19_bn instead of vgg19 since it is better
@@ -41,19 +41,8 @@ test_path = "ArtemisArt/afro - afro-basaldella_1912/afro_1.jpg"
 img = imread_safe(test_path)
 
 """This code is taken from features_extractor.py"""
-preprocessed = resize_image(img)
-image_rgb = cv2.cvtColor(preprocessed, cv2.COLOR_BGR2RGB)
-
-# In pytorch, it's channel first.
-tensor_img = torch.from_numpy(image_rgb).permute(2, 0, 1).float()
-
-# Normalize
-tensor_img = tensor_img / 255.0
-tensor_img = transforms.Normalize(
-    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-)(tensor_img)
-tensor_img = tensor_img.unsqueeze(0)
-tensor_img = tensor_img.to(device)
+preprocess_img = preprocessing_image(img)
+tensor_img = preprocess_img.to(device)
 torch.no_grad()
 feature_maps = extract_feature_maps(tensor_img, FEATURE_LAYER_MODULES)
 print(feature_maps)

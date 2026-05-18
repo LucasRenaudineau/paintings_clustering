@@ -1,7 +1,6 @@
 import cv2
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.applications.resnet50 import preprocess_input
+from torchvision import transforms, models
 
 
 
@@ -44,31 +43,38 @@ def pad_to_square(image: np.ndarray) -> np.ndarray:
 
 # Image preprocessing
  
-def resize_image(image: np.ndarray) -> np.ndarray:
+def preprocessing_image(image: np.ndarray) -> np.ndarray:
     """
-    Pad then resize a BGR image to the 224x224 input size expected by ResNet50.
+    Pad then resize a BGR image to the 224x224 input size.
+    Then, apply the preprocessing needed for ResNet50.
  
     Args:
         image: NumPy array of shape (H, W, 3), BGR uint8.
                The longest dimension must be 1800px.
  
     Returns:
-        NumPy array of shape (1, 224, 224, 3), float32, ready for inference.
+       Tensor array of shape (1, 224, 224, 3), float32
     """
     squared = pad_to_square(image)
     rgb = squared[:, :, ::-1]      # Convert from BGR to RGB (::-1 to read in the opposite direction)
     
-    # IS TENSORFLOW THE BEST FUNCTION ? 
-    resized = tf.image.resize(rgb, INPUT_SHAPE).numpy().astype(np.float32) # resized to 224*224
- 
-    batched = np.expand_dims(resized, axis=0) # adding batch dimension : (1, 224, 224, 3)
-    return preprocess_input(batched) # applying resnet50 preprocessing
+    # Resize to (224,224)
+    resized = cv2.resize(rgb, INPUT_SHAPE, interpolation=cv2.INTER_LINEAR)
+
+    # applying resnet50 preprocessing => make a tensor [(224,224,3) -> (3,224,224)], then normalize with ResNet normalization values
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])        # Used AI for this preprocessing
+    
+    tensor = transform(resized)
+    return tensor.unsqueeze(0) # adding batch dimension : (1, 3, 224, 224)
 
 
 
 
 
 if __name__ == "__main__":
+    
+    # Pad tests
+    
     img = imread_safe("ArtemisArt/afro - afro-basaldella_1912/afro_1.jpg")
     squared_image = pad_to_square(img)
     cv2.imwrite("outputs/afro_1_squared.jpg", squared_image)
