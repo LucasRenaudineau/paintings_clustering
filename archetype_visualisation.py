@@ -1,3 +1,8 @@
+import torch
+import torch.optim as optim
+from torchvision import transforms
+
+
 def unpack_Z_full(Z_full_numpy, p_list, device):
     """
     p_list contient le nombre de canaux de tes 5 couches VGG.
@@ -56,9 +61,6 @@ def calculer_mu_sigma_pytorch(torch_f_map):
     sigma = sigma / (p * (p - 1))
 
     return mu, sigma
-
-
-import torch.optim as optim
 
 
 def synthetiser_archetype(

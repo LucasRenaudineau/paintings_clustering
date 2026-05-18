@@ -1,10 +1,6 @@
 import numpy as np
-import cv2
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torchvision import transforms, models
+from torchvision import models
 from torchvision.models.feature_extraction import create_feature_extractor
 from archetypes import AA
 from preprocessing import *
