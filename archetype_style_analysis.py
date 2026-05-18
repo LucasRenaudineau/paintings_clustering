@@ -47,11 +47,11 @@ for path in paths:
     """This code is taken from features_extractor.py"""
     preprocess_img = preprocessing_image(img)
     tensor_img = preprocess_img.to(device)
-    torch.no_grad()
-    feature_maps = extract_feature_maps(tensor_img, FEATURE_LAYER_MODULES)
-    # print(feature_maps)
-    # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
-    feature_maps_list.append(feature_maps)
+    with torch.no_grad():
+        feature_maps = extract_feature_maps(tensor_img, FEATURE_LAYER_MODULES)
+        # print(feature_maps)
+        # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
+        feature_maps_list.append(feature_maps)
 
 
 class ArchetypeGenerator:
