@@ -10,6 +10,9 @@ from archetypes import AA
 from preprocessing import *
 from glob import glob
 import gc
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from archetype_visualisation import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # We use vgg19_bn instead of vgg19 since it is better
@@ -27,7 +30,7 @@ return_nodes = {
 
 feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
 
-paths = glob("ArtemisArt/[A-I-i]*/*.jpg")
+paths = [path for path in glob("ArtemisArt/**/*.jpg") if path.split("/")[1][0] == "a"]
 print(f"Il y a {len(paths)} images dans le dataset")
 
 
@@ -75,20 +78,21 @@ class ArchetypeGenerator:
                     gc.collect()
                     if device.type == "cuda":
                         torch.cuda.empty_cache()
-                transformed_features.append(np.concatenate(x_raw_list))
-        U, S, VH = np.linalg.svd(np.stack(transformed_features), full_matrices=False)
-        print("Shape for SVD:")
-        print(U.shape, S.shape, VH.shape)
-        X = U[:, :4096].reshape(118, 4096)
+                transformed_features.append(np.concatenate(x_raw_list).flatten())
+        # U, S, VH = np.linalg.svd(np.stack(transformed_features), full_matrices=False)
+        X_raw = np.stack(transformed_features)
+        pca = PCA(min(4096, X_raw.shape[0] - 1))
+        X = pca.fit_transform(X_raw)
         print(f"shape of X : {X.shape}")
         self.X = X
+        self.pca = pca
         A = self.archetype.fit_transform(X)
         Z = self.archetype.archetypes_
         B = self.archetype.B_
         self.A = A
         self.B = B
         self.Z = Z
-        return A, B, Z
+        return A, B, Z, pca
 
     def generate_archetypes(self):
         pass
@@ -97,8 +101,26 @@ class ArchetypeGenerator:
 
 
 a = ArchetypeGenerator(4)
-A, B, Z = a.find_archetypes(paths)
+A, B, Z, pca_mod = a.find_archetypes(paths)
 
 print(f"Voila la forme de A : {A}\n")
 print(f"Voila la forme de B : {B}\n")
 print(f"Voila la forme de Z : {Z}\n")
+
+# On choisit l'Archétype 0
+Z_arch_0 = Z[0]
+
+# Et on lance !
+image_synthetisee = synthetiser_archetype(
+    Z_archetype=Z_arch_0,
+    pca_model=pca_mod,
+    extractor=feature_extractor,
+    device=device,
+)
+plt.imshow(image_synthetisee)
+plt.axis("off")
+plt.title("L'essence de l'Archétype 0")
+plt.savefig("archetype_0.png", bbox_inches="tight", dpi=300)
+print("Image sauvegardée sous le nom 'archetype_0.png' !")
+
+plt.close()
