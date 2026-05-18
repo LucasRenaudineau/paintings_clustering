@@ -27,7 +27,7 @@ return_nodes = {
 
 feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
 
-paths = glob("ArtemisArt/[A-P-p]*/*.jpg")
+paths = glob("ArtemisArt/[A-I-i]*/*.jpg")
 print(f"Il y a {len(paths)} images dans le dataset")
 
 
@@ -41,14 +41,16 @@ class ArchetypeGenerator:
         for i, path in enumerate(data_path):
             with torch.no_grad():
                 img = imread_safe(path)
-                print(f"Taking features from {path}")
+                print(f"Image n° {i}, taking features from {path}")
                 """This code is taken from features_extractor.py"""
+                h, w = img.shape[:2]
+                if w != 1800 and h != 1800:
+                    continue
                 preprocess_img = preprocessing_image(img)
                 tensor_img = preprocess_img.to(device)
                 feature_maps = feature_extractor(tensor_img).values()
                 # print(feature_maps)
                 # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
-                print(f"Transforming data n°{i}")
                 x_raw_list = []
                 for torch_f_map in feature_maps:
                     f_map = torch_f_map.detach().cpu().float().numpy()[0]
@@ -73,15 +75,12 @@ class ArchetypeGenerator:
                     gc.collect()
                     if device.type == "cuda":
                         torch.cuda.empty_cache()
-            # print(len(x_raw_list))
-            # print(f"Shape of the x_raw_list : {np.concatenate(x_raw_list).shape}")
-            U, S, VH = np.linalg.svd(np.concatenate(x_raw_list), full_matrices=False)
-            # print("Shape for SVD:")
-            # print(U.shape, S.shape, VH.shape)
-            x = U[:4096, :].reshape(1, -1).flatten()
-            # print(f"shape of x : {x.shape}")
-            transformed_features.append(x)
-        X = np.array(transformed_features)
+                transformed_features.append(np.concatenate(x_raw_list))
+        U, S, VH = np.linalg.svd(np.stack(transformed_features), full_matrices=False)
+        print("Shape for SVD:")
+        print(U.shape, S.shape, VH.shape)
+        X = U[:, :4096].reshape(118, 4096)
+        print(f"shape of X : {X.shape}")
         self.X = X
         A = self.archetype.fit_transform(X)
         Z = self.archetype.archetypes_
