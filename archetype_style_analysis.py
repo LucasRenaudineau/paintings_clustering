@@ -14,29 +14,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # We use vgg19_bn instead of vgg19 since it is better
 model = models.vgg19_bn(weights=models.VGG19_BN_Weights)
 model = model.to(device)
+model.eval()
 
-FEATURE_LAYER_NAMES = []
-FEATURE_LAYER_MODULES = []
-# Extracting layer names, it has the format : name.number
-# We are only interested in the features part so we neglict the classifier part.
-for name, module in model.named_modules():
-    if "Conv2d" in str(module) or "Linear" in str(module):
-        if len(name) > 0 and "." in name and "classifier" not in name:
-            # print(name, ":", module)
-            FEATURE_LAYER_NAMES.append(name)
-            FEATURE_LAYER_MODULES.append(module)
-print(f"layers :\n {FEATURE_LAYER_NAMES}")
-print(f"Modules :\n{FEATURE_LAYER_MODULES}")
+return_nodes = {
+    "features.2": "layer1",
+    "features.5": "layer2",
+    "features.9": "layer3",
+    "features.12": "layer4",
+    "features.16": "layer5",
+}
 
-
-def extract_feature_maps(input, feature_modules):
-    curr = input
-    feature_maps = []
-    for i in range(5):  # We extract only the five first layers.
-        curr = feature_modules[i](curr)
-        feature_maps.append(curr)
-    return feature_maps
-
+feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
 
 paths = glob("ArtemisArt/delacroix*/*.jpg")
 print(f"Il y a {len(paths)} images dans le dataset")
@@ -45,10 +33,10 @@ for path in paths:
     img = imread_safe(path)
     print(f"Taking features from {path}")
     """This code is taken from features_extractor.py"""
-    preprocess_img = preprocessing_image(img)
-    tensor_img = preprocess_img.to(device)
     with torch.no_grad():
-        feature_maps = extract_feature_maps(tensor_img, FEATURE_LAYER_MODULES)
+        preprocess_img = preprocessing_image(img)
+        tensor_img = preprocess_img.to(device)
+        feature_maps = feature_extractor(tensor_img).values()
         # print(feature_maps)
         # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
         feature_maps_list.append(feature_maps)
