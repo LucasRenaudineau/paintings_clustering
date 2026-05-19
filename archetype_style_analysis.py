@@ -126,7 +126,8 @@ if __name__ == "__main__":
     ]
     print(f"Il y a {len(paths)} images dans le dataset")
 
-    a = ArchetypeGenerator(4, paths, device, feature_extractor)
+    n_archetype = 4
+    a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
     A, B, Z, pca_mod = a.find_archetypes()
 
     print(f"Voila la forme de A : {A}\n")
@@ -135,10 +136,13 @@ if __name__ == "__main__":
 
     print("Soft classifier")
     print(a.classify_soft("ArtemisArt/blake - william-blake_1827/blake_1.jpg"))
+
     print("Closest paintings for archetype")
     print(a.getClosestPaintingsForArchetype(0))
+
     print("Paintings from archetype")
     print(a.getPaintingsFromArchetype(0))
+
     # On choisit l'Archétype 0
     Z_arch_0 = Z[0]
 
@@ -148,6 +152,7 @@ if __name__ == "__main__":
         pca_model=pca_mod,
         extractor=feature_extractor,
         device=device,
+        n_iteration=500,
     )
     plt.imshow(image_synthetisee)
     plt.axis("off")

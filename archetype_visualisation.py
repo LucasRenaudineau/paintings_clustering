@@ -64,7 +64,12 @@ def calculer_mu_sigma_pytorch(torch_f_map):
 
 
 def synthetiser_archetype(
-    Z_archetype, pca_model, extractor, device, p_list=[64, 64, 128, 128, 256]
+    Z_archetype,
+    pca_model,
+    extractor,
+    device,
+    n_iteration,
+    p_list=[64, 64, 128, 128, 256],
 ):
 
     Z_full_numpy = pca_model.inverse_transform(Z_archetype.reshape(1, -1))[0]
@@ -87,7 +92,7 @@ def synthetiser_archetype(
     poids_style = 1e6
     poids_tv = 0.0  # On désactive complètement le lissage pour l'instant
 
-    for iteration in range(1000):
+    for iteration in range(n_iteration):
         optimizer.zero_grad()
 
         img_norm = normalize(image_generee)
