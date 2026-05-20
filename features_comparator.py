@@ -1,8 +1,45 @@
 from preprocessing import *
 from features_extractor import *
 
+
+def cosineSimilarity(activation1, activation2):
+    """ 
+    Implement the cosine similarity norm.
+    Source : https://arxiv.org/pdf/2407.08623
+    
+    Args:
+        2 numpy of size (1, H, W, C)
+    
+    Returns:
+        float : value of the cosine similarity measure between activation1 and activation2
+    """
+    
+    act1Norm = np.linalg.norm(activation1)
+    act2Norm = np.linalg.norm(activation2)
+    
+    
+    
+
 # Distance function between 2 activations
-def distance(activations1, activations2):
+def distance(features1, features2):
+    """ 
+    Compute the norm with every features of 2 images.
+    For now, it is a sum of every cosineSimilarity of each activation.
+    
+    Args:
+        2 Dictionaries mapping each layer name to its activation NumPy array.
+            conv1_relu                -> (1, 112, 112, 64)
+            conv2_block3_out          -> (1, 56, 56, 256)
+            conv3_block4_out          -> (1, 28, 28, 512)
+            conv4_block6_out          -> (1, 14, 14, 1024)
+            conv5_block3_out          -> (1, 7, 7, 2048)
+        
+    Returns:
+        float : value of the distance measure between features1 and features2  
+    """
+    
+    
+    
     pass
 
 # Test function to compute distances between an image and a list of images
