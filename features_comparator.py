@@ -1,5 +1,7 @@
 from preprocessing import *
 from features_extractor import *
+import os
+from pathlib import Path
 
 
 def cosineSimilarity(activation1, activation2):
@@ -74,7 +76,24 @@ def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model)
 
 # Find paths of n images
 def find_paths(n:int):
-    pass
+    """ 
+    Keep the n first images in dataset.
+    14553 images maximum
+    
+    Args:
+        n : number of images to keep
+        
+    Returns:
+        numpy Array of string : path from starting with ArtemisArt folder
+    """
+    dir = Path("ArtemisArt/")
+    imagesPath = dir.rglob("*.jpg")
+    imagesPath = np.array(list(imagesPath))[:n]     # Because imagesPath is a "map object", I am obliged to transform into list then np array... 
+    imagesPath = [str(p) for p in imagesPath]       # Don't know if needed, but I prefer not work with "PosixPath" objects
+    #print(imagesPath)
+
+    return imagesPath
+
 
 # Save the n nearest and n furthest images from the dataset
 def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature_model):
