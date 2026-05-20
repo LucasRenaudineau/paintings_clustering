@@ -6,16 +6,23 @@ def cosineSimilarity(activation1, activation2):
     """ 
     Implement the cosine similarity norm.
     Source : https://arxiv.org/pdf/2407.08623
+             IA used to give the idea to linearise the numpy arrays
     
     Args:
         2 numpy of size (1, H, W, C)
     
     Returns:
         float : value of the cosine similarity measure between activation1 and activation2
+            => between 0 and 1
     """
     
     act1Norm = np.linalg.norm(activation1)
     act2Norm = np.linalg.norm(activation2)
+    
+    act1Flat = activation1.ravel()
+    act2Flat = activation2.ravel()
+    
+    return (1-np.dot(act1Flat,act2Flat)/(act1Norm*act2Norm))/2
     
     
     
@@ -38,9 +45,15 @@ def distance(features1, features2):
         float : value of the distance measure between features1 and features2  
     """
     
+    # temporary, we will edit the code later
+    dist = 0
+    dist += cosineSimilarity(features1["conv1_relu"],features2["conv1_relu"])
+    dist += cosineSimilarity(features1["conv2_block3_out"],features2["conv2_block3_out"])
+    dist += cosineSimilarity(features1["conv3_block4_out"],features2["conv3_block4_out"])
+    dist += cosineSimilarity(features1["conv4_block6_out"],features2["conv4_block6_out"])
+    dist += cosineSimilarity(features1["conv5_block3_out"],features2["conv5_block3_out"])
     
-    
-    pass
+    return dist
 
 # Test function to compute distances between an image and a list of images
 def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model):
