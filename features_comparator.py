@@ -48,8 +48,8 @@ def distance(features1, features2):
     # temporary, we will edit the code later
     dist = 0
     dist += cosineSimilarity(features1["conv1_relu"],features2["conv1_relu"])
-    dist += cosineSimilarity(features1["conv2_block3_out"],features2["conv2_block3_out"])
-    dist += cosineSimilarity(features1["conv3_block4_out"],features2["conv3_block4_out"])
+    dist += 0.1*cosineSimilarity(features1["conv2_block3_out"],features2["conv2_block3_out"])
+    dist += 0.1*cosineSimilarity(features1["conv3_block4_out"],features2["conv3_block4_out"])
     dist += cosineSimilarity(features1["conv4_block6_out"],features2["conv4_block6_out"])
     dist += cosineSimilarity(features1["conv5_block3_out"],features2["conv5_block3_out"])
     
@@ -66,6 +66,14 @@ def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model)
     for i in range(len(comparedImagesPaths)):
         print(f"Distance between {image_path} and {comparedImagesPaths[i]} is:")
         print(distance(activation_set, compared_activations_sets[i]))
+
+# Find paths of n images
+def find_paths(n:int):
+    pass
+
+# Save the nearest and furthest images from the dataset
+def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n):
+    pass
 
 if __name__ =="__main__":
     _, feature_model = load_model()
