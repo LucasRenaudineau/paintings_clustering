@@ -115,6 +115,6 @@ def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature
 
 if __name__ =="__main__":
     _, feature_model = load_model()
-    image_path = "ArtemisArt/braque - georges-braque_1882/braque_1.jpg"
-    comparedImagesPaths = ["ArtemisArt/braque - georges-braque_1882/braque_1.jpg", "ArtemisArt/braque - georges-braque_1882/braque_2.jpg", "ArtemisArt/braque - georges-braque_1882/braque_3.jpg", "ArtemisArt/braque - georges-braque_1882/braque_4.jpg", "ArtemisArt/braque - georges-braque_1882/braque_5.jpg", "ArtemisArt/braque - georges-braque_1882/braque_6.jpg", "ArtemisArt/braque - georges-braque_1882/braque_7.jpg", "ArtemisArt/brauner - victor-brauner_1903/brauner_1.jpg", "ArtemisArt/bronzino - agnolo-di-cosimi-dit-bronzino_1503/bronzino_1.jpg", "ArtemisArt/brueghel-j - jan-brueghel-l-ancien-dit-de-velours_1568/brueghel-j-I_1.jpg", "ArtemisArt/delacroix - eugene-delacroix_1798/delacroix_33.jpg"]
-    _ = compute_distances_one_to_many(image_path, comparedImagesPaths, feature_model)
+    paths = find_paths(100)
+    print("Image to compare is " + paths[0])
+    save_nearest_and_furthest_images(paths[0], paths, 20, feature_model)
