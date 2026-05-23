@@ -73,8 +73,25 @@ def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model)
     return distances
 
 # Find paths of n images
-def find_paths(n:int):
-    pass
+import glob
+import random
+
+def find_paths(n: int) -> list[str]:
+    """
+    Return a list of n paths to existing images under ./ArtemisArt/.
+
+    Args:
+        n: number of paths to return.
+
+    Returns:
+        List of n strings of the form ./ArtemisArt/<folder>/<image_name>.jpg
+    """
+    all_paths = glob.glob("./ArtemisArt/*/*.jpg")
+    if not all_paths:
+        raise FileNotFoundError("No .jpg images found under ./ArtemisArt/")
+    if n > len(all_paths):
+        raise ValueError(f"Requested {n} paths but only {len(all_paths)} images exist.")
+    return random.sample(all_paths, n)
 
 # Save the n nearest and n furthest images from the dataset
 def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature_model):
@@ -88,10 +105,13 @@ def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature
     for i in range(n):
         min_index = sorted_min_indices[i]
         max_index = sorted_max_indices[i]
-        cv2.imwrite("outputs/n_min/"+comparedImagesPaths[min_index].split("/")[-1])
+        img_min = imread_safe(comparedImagesPaths[min_index])
+        cv2.imwrite("outputs/n_min/"+comparedImagesPaths[min_index].split("/")[-1], img_min)
         print(f"In n_min : {comparedImagesPaths[min_index]} with a score of {distances[min_index]}.")
-        cv2.imwrite("outputs/n_max/"+comparedImagesPaths[max_index].split("/")[-1])
-        print(f"In n_min : {comparedImagesPaths[max_index]} with a score of {distances[max_index]}.")
+
+        img_max = imread_safe(comparedImagesPaths[max_index])
+        cv2.imwrite("outputs/n_max/"+comparedImagesPaths[max_index].split("/")[-1], img_max)
+        print(f"In n_max : {comparedImagesPaths[max_index]} with a score of {distances[max_index]}.")
 
 if __name__ =="__main__":
     _, feature_model = load_model()
