@@ -1,5 +1,7 @@
 from preprocessing import *
 from features_extractor import *
+import os
+from pathlib import Path
 
 
 def cosineSimilarity(activation1, activation2):
@@ -72,26 +74,24 @@ def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model)
         distances.append(dist)
     return distances
 
-# Find paths of n images
-import glob
-import random
-
-def find_paths(n: int) -> list[str]:
-    """
-    Return a list of n paths to existing images under ./ArtemisArt/.
-
+def find_paths(n:int):
+    """ 
+    Keep the n first images in dataset.
+    14553 images maximum
+    
     Args:
-        n: number of paths to return.
-
+        n : number of images to keep
+        
     Returns:
-        List of n strings of the form ./ArtemisArt/<folder>/<image_name>.jpg
+        numpy Array of string : path from starting with ArtemisArt folder
     """
-    all_paths = glob.glob("./ArtemisArt/*/*.jpg")
-    if not all_paths:
-        raise FileNotFoundError("No .jpg images found under ./ArtemisArt/")
-    if n > len(all_paths):
-        raise ValueError(f"Requested {n} paths but only {len(all_paths)} images exist.")
-    return random.sample(all_paths, n)
+    dir = Path("ArtemisArt/")
+    imagesPath = dir.rglob("*.jpg")
+    imagesPath = np.array(list(imagesPath))[:n]     # Because imagesPath is a "map object", I am obliged to transform into list then np array... 
+    imagesPath = [str(p) for p in imagesPath]       # Don't know if needed, but I prefer not work with "PosixPath" objects
+    #print(imagesPath)
+
+    return imagesPath
 
 # Save the n nearest and n furthest images from the dataset
 def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature_model):
