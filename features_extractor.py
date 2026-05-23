@@ -34,8 +34,9 @@ def load_model():
                        every layer listed in FEATURE_LAYER_NAMES.
     """
     try:
-        weights_dict = torch.load(MODEL_PATH)
-        model = models.resnet50(weights=weights_dict)
+        model = models.resnet50(weights=None)
+        model.fc = nn.Identity()
+        model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
         model.fc = nn.Identity()
         print(f"Loaded ResNet50 from {MODEL_PATH}")
     except (OSError, IOError, ValueError):
@@ -72,8 +73,8 @@ def extract_features(image, feature_model):
     tensor_preprocess_image = preprocessing_image(image)
     tensor_preprocess_image=tensor_preprocess_image.to(device)
 
-    torch.no_grad()
-    activations = feature_model(tensor_preprocess_image)
+    with torch.no_grad()
+        activations = feature_model(tensor_preprocess_image)
     numpy_activations = {}
     for layer_name, tensor in activations.items():
         # Go back to (1,H,W,C)
