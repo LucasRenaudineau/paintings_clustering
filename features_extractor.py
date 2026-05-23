@@ -11,7 +11,7 @@ from torchvision.models.feature_extraction import create_feature_extractor
 
 from preprocessing import *
 
-MODEL_PATH = "./models/resnet50.keras"
+MODEL_PATH = "./models/resnet50.pth"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Used ai to know the corresponding names for pytorch
