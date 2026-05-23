@@ -73,7 +73,7 @@ def extract_features(image, feature_model):
     tensor_preprocess_image = preprocessing_image(image)
     tensor_preprocess_image=tensor_preprocess_image.to(device)
 
-    with torch.no_grad()
+    with torch.no_grad():
         activations = feature_model(tensor_preprocess_image)
     numpy_activations = {}
     for layer_name, tensor in activations.items():
