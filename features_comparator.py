@@ -36,24 +36,23 @@ def distance(features1, features2):
     For now, it is a sum of every cosineSimilarity of each activation.
     
     Args:
-        2 Dictionaries mapping each layer name to its activation NumPy array.
-            conv1_relu                -> (1, 112, 112, 64)
-            conv2_block3_out          -> (1, 56, 56, 256)
-            conv3_block4_out          -> (1, 28, 28, 512)
-            conv4_block6_out          -> (1, 14, 14, 1024)
-            conv5_block3_out          -> (1, 7, 7, 2048)
+        2 Arrays mapping each layer name in order to its activation NumPy array.
+            0  -> (1, 112, 112, 64)      (conv1_relu)
+            1  -> (1, 56, 56, 256)       (conv2_block3_out)
+            2  -> (1, 28, 28, 512)       (conv3_block4_out)
+            3  -> (1, 14, 14, 1024)      (conv4_block6_out)
+            4  -> (1, 7, 7, 2048)        (conv5_block3_out)
         
     Returns:
         float : value of the distance measure between features1 and features2  
     """
     
-    # temporary, we will edit the code later
     dist = 0
-    dist += cosineSimilarity(features1["conv1_relu"],features2["conv1_relu"])
-    dist += 0.1*cosineSimilarity(features1["conv2_block3_out"],features2["conv2_block3_out"])
-    dist += 0.1*cosineSimilarity(features1["conv3_block4_out"],features2["conv3_block4_out"])
-    dist += cosineSimilarity(features1["conv4_block6_out"],features2["conv4_block6_out"])
-    dist += cosineSimilarity(features1["conv5_block3_out"],features2["conv5_block3_out"])
+    dist += cosineSimilarity(features1[0],features2[0])
+    dist += 0.1*cosineSimilarity(features1[1],features2[1])
+    dist += 0.1*cosineSimilarity(features1[2],features2[2])
+    dist += cosineSimilarity(features1[3],features2[3])
+    dist += cosineSimilarity(features1[4],features2[4])
     
     return dist
 

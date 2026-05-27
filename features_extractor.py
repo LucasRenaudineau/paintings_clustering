@@ -62,12 +62,12 @@ def extract_features(image, feature_model):
         feature_model: The multi-output Keras Model returned by load_model().
  
     Returns:
-        Dictionary mapping each layer name to its activation NumPy array.
-        conv1_relu                -> (1, 112, 112, 64)
-        conv2_block3_out          -> (1, 56, 56, 256)
-        conv3_block4_out          -> (1, 28, 28, 512)
-        conv4_block6_out          -> (1, 14, 14, 1024)
-        conv5_block3_out          -> (1, 7, 7, 2048)
+        Array mapping each layer name in order to its activation NumPy array.
+            0  -> (1, 112, 112, 64)      (conv1_relu)
+            1  -> (1, 56, 56, 256)       (conv2_block3_out)
+            2  -> (1, 28, 28, 512)       (conv3_block4_out)
+            3  -> (1, 14, 14, 1024)      (conv4_block6_out)
+            4  -> (1, 7, 7, 2048)        (conv5_block3_out)
     """
     
     tensor_preprocess_image = preprocessing_image(image)
@@ -75,10 +75,10 @@ def extract_features(image, feature_model):
 
     with torch.no_grad():
         activations = feature_model(tensor_preprocess_image)
-    numpy_activations = {}
+    numpy_activations = []
     for layer_name, tensor in activations.items():
         # Go back to (1,H,W,C)
-        numpy_activations[layer_name] = tensor.cpu().detach().numpy().transpose(0, 2, 3, 1)
+        numpy_activations.append(tensor.cpu().detach().numpy().transpose(0, 2, 3, 1))
  
     return numpy_activations
 
@@ -88,9 +88,5 @@ if __name__ == "__main__":
     img = imread_safe(test_path)
     features = extract_features(img, feature_model)
     print("Features shapes :")
-    for layer, activation in features.items():
-        print(f"{layer:25s} -> {str(activation.shape)}")
-
-
-
-
+    for activation in features:
+        print(f"{str(activation.shape)}")
