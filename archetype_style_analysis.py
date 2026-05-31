@@ -120,44 +120,50 @@ if __name__ == "__main__":
     }
 
     feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
+    cur_archetype=0
+    for letter in ["a", "b", "c", "d"]:
+        """We use 4 archetypes per group of arts starting with the corresponding letter."""
+        print(f"The part of the dataset with names starting with {letter}")
+        paths = [
+            path for path in glob("ArtemisArt/**/*.jpg") if path.split("/")[1][0] == letter
+        ]
+        print(f"Il y a {len(paths)} images dans le dataset")
 
-    paths = [
-        path for path in glob("ArtemisArt/**/*.jpg") if path.split("/")[1][0] == "a"
-    ]
-    print(f"Il y a {len(paths)} images dans le dataset")
+        n_archetype = 4
+        a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
+        A, B, Z, pca_mod = a.find_archetypes()
 
-    n_archetype = 4
-    a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
-    A, B, Z, pca_mod = a.find_archetypes()
+        # print(f"Voila la forme de A : {A}\n")
+        # print(f"Voila la forme de B : {B}\n")
+        # print(f"Voila la forme de Z : {Z}\n")
 
-    print(f"Voila la forme de A : {A}\n")
-    print(f"Voila la forme de B : {B}\n")
-    print(f"Voila la forme de Z : {Z}\n")
+        print("Soft classifier")
+        print(a.classify_soft("ArtemisArt/blake - william-blake_1827/blake_1.jpg"))
 
-    print("Soft classifier")
-    print(a.classify_soft("ArtemisArt/blake - william-blake_1827/blake_1.jpg"))
+        print("Closest paintings for archetype")
+        print(a.getClosestPaintingsForArchetype(0))
 
-    print("Closest paintings for archetype")
-    print(a.getClosestPaintingsForArchetype(0))
+        print("Paintings from archetype")
+        print(a.getPaintingsFromArchetype(0))
 
-    print("Paintings from archetype")
-    print(a.getPaintingsFromArchetype(0))
+        # On choisit l'Archétype 0
+        Z_arch_0 = Z[0]
 
-    # On choisit l'Archétype 0
-    Z_arch_0 = Z[0]
+        # Et on lance !
+        images_synthetisees = [synthetiser_archetype(
+            Z_archetype=Z[i],
+            pca_model=pca_mod,
+            extractor=feature_extractor,
+            device=device,
+            n_iteration=500,
+        ) for i in range(n_archetype)]
 
-    # Et on lance !
-    image_synthetisee = synthetiser_archetype(
-        Z_archetype=Z_arch_0,
-        pca_model=pca_mod,
-        extractor=feature_extractor,
-        device=device,
-        n_iteration=500,
-    )
-    plt.imshow(image_synthetisee)
-    plt.axis("off")
-    plt.title("L'essence de l'Archétype 0")
-    plt.savefig("archetype_0.png", bbox_inches="tight", dpi=300)
-    print("Image sauvegardée sous le nom 'archetype_0.png' !")
+        for i in range(n_archetype):
+            plt.imshow(images_synthetisees[i])
+            plt.axis("off")
+            #plt.title(f"L'essence de l'Archétype {i}")
+            plt.savefig(f"archetypes/archetype_{cur_archetype}.png", bbox_inches="tight", dpi=300)
+            print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
+            cur_archetype+=1
 
-    plt.close()
+        plt.close()
