@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from archetype_visualisation import *
 from sklearn.manifold import TSNE 
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_score, pairwise_distances
 import scipy.cluster.hierarchy as hcluster
 paths = [
         path for path in glob("archetypes/archetype_*") if path.split("/")[1][0] in ["a", "b", "c", "d", "e", "f", "g"]
@@ -24,32 +24,41 @@ print(x.shape)
 x_flattened = x.reshape(N, -1)
 pca = PCA(n_components=15)
 x_pca = pca.fit_transform(x_flattened)
+print(f"x_pca shape : {x_pca.shape}")
 
-plt.Figure()
-plt.scatter(x_pca[:,0], x_pca[:,1])
-plt.savefig(f"archetypes/embedded_archetypes.png", bbox_inches="tight", dpi=300)
-plt.show()
-
-print("Clustering...")
-# Use of AI
-Z = hcluster.linkage(x_pca, method='ward')
-best_k = 2
-best_score = -1
-for k in range(2, N):
-    labels_test = hcluster.fcluster(Z, t=k, criterion='maxclust')
-    # On calcule la pertinence de ce découpage
-    score = silhouette_score(x_pca, labels_test) 
+class DeepClusterer:
+    def __init__(self, model, data, dist=np.linalg.norm, epochs=100):
+        self.x = data
+        self.N = len(self.data)
+        self.model = model
+        self.dist = dist
+        self.labels = np.array([np.arange(self.N)]) # Initialization Everything in the same cluster
+        self.lambd = 0.5
+        self.K = len(self.labels)
     
-    if score > best_score:
-        best_score = score
-        best_k = k
-clusters = hcluster.fcluster(Z, t=best_k, criterion='maxclust')
+    def D(self, k1, k2):
+        for i in range(len(np.where(self.labels==k1)[0])):
+            for j in range(len(np.where(self.labels==k2)[0])):
+                ind_i = np.where(self.labels==k1)[0][i]
+                ind_j = np.where(self.labels==k2)[0][j]
+                SP += self.dist(self.x[ind_i], self.x[ind_j])
 
-print(clusters)
-
-plt.Figure()
-plt.scatter(x_pca[:,0], x_pca[:,1], c=clusters)
-plt.savefig(f"archetypes/clustered_archetypes.png", bbox_inches="tight", dpi=300)
-plt.show()
-
+    def compactness(self):
+        return np.sum([self.D(k, k, self.dist, self.labels) for k in range(self.K)])
+    def separation(self):
+        return np.sum([[self.D(k1, k2, self.dist, self.labels) for k1 in range(self.K) if k1!=k2]for k2 in range(K)])
+    def loss(self):
+        return self.compactness(self.K)-(self.lambd/self.K) * self.separation(self.K)
+    
+    def get_split_threshold(self):
+        def JS_div(k1, k2):
+            return
+        return self.lambd / (2*self.K * (self.lambd + self.K + 1)) * np.sum([[JS_div(k1,k2) for k1 in range(self.K) if k1!=k2]for k2 in range(self.K)])
+    
+    def cluster_split(self):
+        return
+    
+    def cluster_merge(self):
+        return
+    
 
