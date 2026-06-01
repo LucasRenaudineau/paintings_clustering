@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
     cur_archetype=0
-    for letter in ["a"]:
+    for letter in ["a", "b", "c", "d"]:
         """We use 4 archetypes per group of arts starting with the corresponding letter."""
         print(f"The part of the dataset with names starting with {letter}")
         paths = [

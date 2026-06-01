@@ -24,7 +24,17 @@ _IMAGENET_STD  = [0.229, 0.224, 0.225]
 
 def unpack_Z_full(Z_full_numpy, p_list, device):
     """
-    Splits the flat inverse-PCA vector back into per-layer (mu, sigma) targets.
+    Splits the flat inverse-PCA vector back into per-layer (mu, sigma) targets,
+    and **reverses the p*(p-1) normalisation** so the targets are in raw feature
+    space (same scale as the statistics computed by calculer_mu_sigma_pytorch).
+
+    Background: in ArchetypeGenerator.transform(), mu and sigma at each layer are
+    divided by p*(p-1) before being stored in X.  This normalisation is useful for
+    PCA/AA (it prevents high-channel layers from dominating the variance), but it
+    shrinks all values to ~1e-4.  If the targets kept that scale, the MSE loss
+    would start at ~1e-8 and vanish in a few iterations regardless of the image.
+    Multiplying back by p*(p-1) restores values to their natural range (~0.1–1.0),
+    giving a meaningful, slowly-decreasing style loss throughout optimisation.
 
     Parameters
     ----------
@@ -39,6 +49,7 @@ def unpack_Z_full(Z_full_numpy, p_list, device):
     Returns
     -------
     list of dict {"mu": Tensor(p,1), "sigma": Tensor(p,p)}
+        Targets in raw (un-normalised) feature space.
     """
     expected_len = sum(p + p * p for p in p_list)
     if len(Z_full_numpy) != expected_len:
@@ -52,13 +63,16 @@ def unpack_Z_full(Z_full_numpy, p_list, device):
     idx = 0
 
     for p in p_list:
+        norm = p * (p - 1)   # inverse of the normalisation applied in transform()
+
         mu_flat    = Z_full_numpy[idx : idx + p]
         idx       += p
         sigma_flat = Z_full_numpy[idx : idx + p * p]
         idx       += p * p
 
-        mu    = torch.tensor(mu_flat,    dtype=torch.float32, device=device).view(p, 1)
-        sigma = torch.tensor(sigma_flat, dtype=torch.float32, device=device).view(p, p)
+        # Multiply back by p*(p-1) to undo the normalisation stored in X/Z
+        mu    = torch.tensor(mu_flat    * norm, dtype=torch.float32, device=device).view(p, 1)
+        sigma = torch.tensor(sigma_flat * norm, dtype=torch.float32, device=device).view(p, p)
 
         cibles.append({"mu": mu, "sigma": sigma})
 
@@ -78,8 +92,14 @@ def total_variation_loss(img):
 
 def calculer_mu_sigma_pytorch(torch_f_map):
     """
-    Computes the normalised first- and second-order statistics of a feature map,
-    matching the formula used in ArchetypeGenerator.transform().
+    Computes the raw first- and second-order statistics of a feature map.
+
+    Intentionally does NOT apply the p*(p-1) normalisation used in
+    ArchetypeGenerator.transform().  That normalisation is only needed when
+    building the PCA/AA descriptor (to prevent high-channel layers from
+    dominating the variance).  Here, both the computed statistics and the
+    targets from unpack_Z_full() are in raw space, so the MSE is meaningful
+    and has the right scale for optimisation (~0.1–10 per layer before weighting).
 
     Parameters
     ----------
@@ -87,9 +107,8 @@ def calculer_mu_sigma_pytorch(torch_f_map):
 
     Returns
     -------
-    mu    : Tensor, shape (p, 1)
-    sigma : Tensor, shape (p, p)
-    Both normalised by p*(p-1) as in the paper.
+    mu    : Tensor, shape (p, 1)   — mean activation per channel
+    sigma : Tensor, shape (p, p)   — channel covariance matrix
     """
     _, p, h, w = torch_f_map.shape
     m = h * w
@@ -102,11 +121,6 @@ def calculer_mu_sigma_pytorch(torch_f_map):
     f_map_centered = f_map_flat - mu
     sigma = torch.mm(f_map_centered, f_map_centered.t()) / m
 
-    # Normalisation from the paper (prevents high-channel layers from dominating)
-    norm = p * (p - 1)
-    mu    = mu    / norm
-    sigma = sigma / norm
-
     return mu, sigma
 
 
@@ -118,9 +132,10 @@ def synthetiser_archetype(
     n_iteration,
     p_list=VGG19BN_P_LIST,
     image_size=224,
-    lr=0.05,
-    poids_style=1e6,
-    poids_tv=1e-3,
+    lr=0.01,
+    poids_style=1.0,
+    poids_tv=0.1,
+    log_every=100,
 ):
     """
     Synthesises a texture image whose deep style statistics match archetype Z_archetype.
@@ -129,7 +144,24 @@ def synthetiser_archetype(
         L = poids_style * sum_l [ MSE(mu_l, mu_l*) + MSE(sigma_l, sigma_l*) ]
           + poids_tv   * TV(image)
 
-    where (mu_l*, sigma_l*) are the target statistics decoded from Z_archetype.
+    where (mu_l*, sigma_l*) are the target statistics decoded from Z_archetype,
+    both in raw (un-normalised) feature space.
+
+    --- Tuning guide ---
+
+    The system has 224*224*3 = 150 528 pixel parameters and ~107 136 style
+    constraints, so the style loss can reach near-zero quickly.  The key is to
+    keep poids_tv high enough so that TV regularisation shapes the image *while*
+    the style loss is still non-trivial:
+
+      poids_style=1.0, poids_tv=0.1, lr=0.01   ← recommended defaults
+        Style and TV contribute roughly equally at initialisation, giving a
+        well-textured result.  Increase poids_tv toward 1.0 for smoother images;
+        decrease toward 0.01 for more detail/noise.
+
+      poids_tv=1e-3  (old default)
+        TV contributes < 0.1% of the total loss → image converges to an
+        arbitrary solution that satisfies the stats but looks like noise.
 
     Parameters
     ----------
@@ -142,7 +174,8 @@ def synthetiser_archetype(
         The tapped VGG feature extractor (create_feature_extractor output).
     device       : torch.device
     n_iteration  : int
-        Number of gradient-descent steps.
+        Number of gradient-descent steps.  500 is a minimum; 1000–2000 gives
+        better convergence with the lower lr.
     p_list       : list[int]
         Channel counts at each tapped layer. Must match what transform() used.
         Default: VGG19BN_P_LIST = [64, 64, 128, 128, 256].
@@ -150,12 +183,16 @@ def synthetiser_archetype(
         Spatial resolution of the synthesised image (square). 224 is fast;
         512 gives richer textures but uses more VRAM.
     lr           : float
-        Adam learning rate.
+        Adam learning rate.  0.01 lets style and TV losses co-evolve rather
+        than letting style collapse instantly.
     poids_style  : float
         Weight on the style loss.
     poids_tv     : float
-        Weight on the total-variation regulariser. Set to 0 to disable (expect
-        noisy results). A value around 1e-3 works well in practice.
+        Weight on the total-variation regulariser.  Must be comparable to
+        poids_style (same order of magnitude) to meaningfully shape the image.
+        Rule of thumb: poids_tv * TV_init ≈ 0.3 * poids_style * style_init.
+    log_every    : int
+        Print diagnostics every this many iterations.
 
     Returns
     -------
@@ -175,7 +212,8 @@ def synthetiser_archetype(
     optimizer = optim.Adam([image_generee], lr=lr)
 
     print(f"Début de la synthèse ({n_iteration} itérations, "
-          f"image {image_size}x{image_size})...")
+          f"image {image_size}x{image_size}, lr={lr}, "
+          f"poids_style={poids_style}, poids_tv={poids_tv})...")
 
     # --- 4. Optimisation loop ------------------------------------------------
     for iteration in range(n_iteration):
@@ -209,10 +247,12 @@ def synthetiser_archetype(
         # Keep pixel values in the valid display range
         image_generee.data.clamp_(0.0, 1.0)
 
-        if iteration % 100 == 0:
-            print(f"  Itération {iteration:03d} | "
-                  f"Loss style: {loss_style.item():.2f} | "
-                  f"Loss TV: {loss_tv.item():.4f}")
+        if iteration % log_every == 0:
+            # Use scientific notation so near-zero values are visible (not "0.00")
+            print(f"  Itération {iteration:04d} | "
+                  f"Style: {loss_style.item():.4e} | "
+                  f"TV: {loss_tv.item():.4e} | "
+                  f"Total: {loss_totale.item():.4e}")
 
     # --- 5. Return as a numpy HWC array in [0, 1] ----------------------------
     image_finale = (
