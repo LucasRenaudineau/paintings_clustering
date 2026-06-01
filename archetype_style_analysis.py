@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
     cur_archetype=0
-    for letter in ["a", "b", "c", "d"]:
+    for letter in ["a"]:
         """We use 4 archetypes per group of arts starting with the corresponding letter."""
         print(f"The part of the dataset with names starting with {letter}")
         paths = [
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         ]
         print(f"Il y a {len(paths)} images dans le dataset")
 
-        n_archetype = 4
+        n_archetype = 8
         a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
         A, B, Z, pca_mod = a.find_archetypes()
 
