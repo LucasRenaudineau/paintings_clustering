@@ -27,6 +27,8 @@ x_pca = pca.fit_transform(x_flattened)
 print(f"x_pca shape : {x_pca.shape}")
 
 class DeepClusterer:
+    """This class implements the Clustering With unkown number of clusters method proposed in the paper :\\
+    **Deep Plug-and-Play Clustering with Unknown Number of Clusters** by *An Xiao et al.*"""
     def __init__(self, model, data, dist=np.linalg.norm, epochs=100):
         self.x = data
         self.N = len(self.data)
@@ -35,6 +37,22 @@ class DeepClusterer:
         self.labels = np.array([np.arange(self.N)]) # Initialization Everything in the same cluster
         self.lambd = 0.5
         self.K = len(self.labels)
+        self.n_eps = epochs
+    
+    def k_means(self, k, eps=100):
+        centroids=np.choose(k, self.x)
+        x_clusters = [np.argmin([np.linalg.norm(self.x[i]-centroids[j])for j in range(k)]) for i in range(len(self.x))]
+        clusters = [np.where(x_clusters==i)[0] for i in range(k)]
+        old_clusters = clusters
+        for ep in range(eps):
+            centroids = [np.mean(clusters[i]) for i in range(k)]
+            x_clusters = [np.argmin([np.linalg.norm(self.x[i]-centroids[j])for j in range(k)]) for i in range(len(self.x))]
+            clusters = [np.where(x_clusters==i)[0] for i in range(k)]
+            
+            if np.equal(clusters, old_clusters):
+                break # convergence
+            old_clusters = clusters
+        return centroids, clusters
     
     def D(self, k1, k2):
         for i in range(len(np.where(self.labels==k1)[0])):
@@ -50,15 +68,50 @@ class DeepClusterer:
     def loss(self):
         return self.compactness(self.K)-(self.lambd/self.K) * self.separation(self.K)
     
-    def get_split_threshold(self):
-        def JS_div(k1, k2):
+    def JS_div(k1, k2):
+        if np.isscalar(k1) and np.isscalar(k2):
             return
-        return self.lambd / (2*self.K * (self.lambd + self.K + 1)) * np.sum([[JS_div(k1,k2) for k1 in range(self.K) if k1!=k2]for k2 in range(self.K)])
-    
-    def cluster_split(self):
         return
-    
-    def cluster_merge(self):
-        return
-    
 
+    def get_split_threshold(self):
+        return self.lambd / (2*self.K * (self.lambd + self.K + 1)) * np.sum([[self.JS_div(k1,k2) for k1 in range(self.K) if k1!=k2]for k2 in range(self.K)])
+    
+    def get_merge_threshold(self):
+        return
+
+    def cluster_split(self, k, k1, k2):
+        return
+    
+    def cluster_merge(self, k1,k2):
+        return
+    
+    def clusterize(self):
+        for epoch in range(self.n_eps):
+            # Apply A to training the network N with current number of cluster K*
+            # ...
+            for k in range(self.K):
+                # Using A, split cluster into two.
+                cluster_k = self.labels[k]
+                k1, k2 = cluster_k[:len(cluster_k)//2], cluster_k[len(cluster_k)//2:]# à changer 
+                J_div = self.JS_div(k1, k2)
+                Ts = self.get_split_threshold()
+                if J_div > Ts:
+                    self.cluster_split(k, k1, k2)
+            # Apply A to training the network N with current number of cluster K* and equ 7
+            # ...
+            all_divs = np.array([[self.JS_div(k1, k2) for k1 in range(self.K)]for k2 in range(self.K)])
+            mask = ~np.eye(self.K, dtype=bool) 
+            cand_k2, cand_k1 = np.unravel_index(np.argmin(all_divs[mask]), (self.K, self.K))
+            J_div = self.JS_div(cand_k1, cand_k2)
+            Tm = self.get_merge_threshold()
+            if J_div < Tm:
+                self.cluster_merge(cand_k1, cand_k2)
+            # Apply A to training network N with K*.
+            # ...
+        return
+
+
+
+
+            
+            
