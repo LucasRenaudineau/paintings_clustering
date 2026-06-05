@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 from torchvision import models
@@ -6,9 +7,10 @@ from archetypes import AA
 from preprocessing import *
 from glob import glob
 import gc
-from sklearn.decomposition import PCA
+from sklearn.decomposition import IncrementalPCA
 import matplotlib.pyplot as plt
 from archetype_visualisation import *
+from tqdm import tqdm
 
 
 class ArchetypeGenerator:
@@ -24,59 +26,81 @@ class ArchetypeGenerator:
             preprocess_img = preprocessing_image(img)
             tensor_img = preprocess_img.to(self.device)
             feature_maps = self.feature_extractor(tensor_img).values()
-            # print(feature_maps)
-            # print(f"shape : {len(feature_maps)} x {feature_maps[0].shape}")
             x_raw_list = []
             for torch_f_map in feature_maps:
                 f_map = torch_f_map.detach().cpu().float().numpy()[0]
                 f_map = f_map.reshape(f_map.shape[0], f_map.shape[1] * f_map.shape[2])
                 p, m = f_map.shape[0], f_map.shape[1]
-                # print(f"THE VALUE OF p IS {p} !!!!!!!")
                 mu = np.mean(f_map, axis=1).reshape(-1, 1)
-                # print(f"f_map shape: {f_map.shape}")
-                # print(f"mu shape: {mu.shape}")
                 sigma = (f_map - mu) @ (f_map - mu).T / m
                 mu = mu / (p * (p - 1))
                 sigma = sigma / (p * (p - 1))
                 sigma_flat = sigma.flatten()
-                # print(f"The shape of sigma_flat is : {sigma_flat.shape}")
                 x_raw = np.concatenate([mu, sigma_flat.reshape(-1, 1)])
-                # print(f"shape of x_raw : {x_raw.shape}")
                 x_raw_list.append(x_raw)
         del preprocess_img, tensor_img, feature_maps
         return np.concatenate(x_raw_list).flatten()
 
     def find_archetypes(self):
-        transformed_features = []
-        for i, path in enumerate(self.data_path):
+        temp_dir = "temp_feature"
+        os.makedirs(temp_dir, exist_ok=True)
+        features_files = []
+        valid_paths = []
+        print("Starting transformation of the data...")
+        for i, path in enumerate(tqdm(self.data_path)):
             with torch.no_grad():
                 img = imread_safe(path)
-                print(f"Image n° {i}, taking features from {path}")
+                # print(f"Image n° {i}, taking features from {path}")
                 """This code is taken from features_extractor.py"""
                 h, w = img.shape[:2]
                 m = max(h, w)
                 if m != 1800:
                     continue
-                transformed_features.append(self.transform(img))
-                del img
+                features = self.transform(img)
+                temp_file = os.path.join(temp_dir, f"feature_{i}.npy")
+                np.save(temp_file, features)
+                valid_paths.append(path)
+                features_files.append(temp_file)
+
+                del img, features
                 if i % 10 == 0:
                     gc.collect()
                     if self.device.type == "cuda":
                         torch.cuda.empty_cache()
-        # U, S, VH = np.linalg.svd(np.stack(transformed_features), full_matrices=False)
-        X_raw = np.stack(transformed_features)
-        pca = PCA(min(4096, X_raw.shape[0] - 1))
-        X = pca.fit_transform(X_raw)
+        self.data_path = np.array(valid_paths)
+        n_samples = len(features_files)
+        n_components = min(512, n_samples - 1)
+        ipca = IncrementalPCA(n_components)
+
+        print("Starting IncrementalPCA fitting...")
+        for i in tqdm(range(0, n_samples, 512)):
+            batch = features_files[i : i + 512]
+            if len(batch) < n_components:
+                continue
+            batch_data = [np.load(f) for f in batch]
+            ipca.partial_fit(batch_data)
+            del batch_data
+
+        print("Starting transformation of the data via IncrementalPCA...")
+        X_transformed_list = []
+        for i in tqdm(range(0, n_samples, 512)):
+            batch = features_files[i : i + 512]
+            batch_data = [np.load(f) for f in batch]
+            X_batch_transformed = ipca.transform(batch_data)
+            X_transformed_list.append(X_batch_transformed)
+            del batch_data
+        X = np.vstack(X_transformed_list)
         print(f"shape of X : {X.shape}")
         self.X = X
-        self.pca = pca
+        self.ipca = ipca
+        print("Starting archetype generation...")
         A = self.archetype.fit_transform(X)
         Z = self.archetype.archetypes_
         B = self.archetype.B_
         self.A = A
         self.B = B
         self.Z = Z
-        return A, B, Z, pca
+        return A, B, Z, ipca
 
     def classify_soft(self, x):
         img = imread_safe(x)
@@ -120,12 +144,14 @@ if __name__ == "__main__":
     }
 
     feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
-    cur_archetype=0
+    cur_archetype = 0
     for letter in ["a", "b", "c", "d"]:
         """We use 4 archetypes per group of arts starting with the corresponding letter."""
         print(f"The part of the dataset with names starting with {letter}")
         paths = [
-            path for path in glob("ArtemisArt/**/*.jpg") if path.split("/")[1][0] == letter
+            path
+            for path in glob("ArtemisArt/**/*.jpg")
+            if path.split("/")[1][0] == letter
         ]
         print(f"Il y a {len(paths)} images dans le dataset")
 
@@ -150,20 +176,27 @@ if __name__ == "__main__":
         Z_arch_0 = Z[0]
 
         # Et on lance !
-        images_synthetisees = [synthetiser_archetype(
-            Z_archetype=Z[i],
-            pca_model=pca_mod,
-            extractor=feature_extractor,
-            device=device,
-            n_iteration=500,
-        ) for i in range(n_archetype)]
+        images_synthetisees = [
+            synthetiser_archetype(
+                Z_archetype=Z[i],
+                pca_model=pca_mod,
+                extractor=feature_extractor,
+                device=device,
+                n_iteration=500,
+            )
+            for i in range(n_archetype)
+        ]
 
         for i in range(n_archetype):
             plt.imshow(images_synthetisees[i])
             plt.axis("off")
-            #plt.title(f"L'essence de l'Archétype {i}")
-            plt.savefig(f"archetypes/archetype_{cur_archetype}.png", bbox_inches="tight", dpi=300)
+            # plt.title(f"L'essence de l'Archétype {i}")
+            plt.savefig(
+                f"archetypes/archetype_{cur_archetype}.png",
+                bbox_inches="tight",
+                dpi=300,
+            )
             print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
-            cur_archetype+=1
+            cur_archetype += 1
 
         plt.close()
