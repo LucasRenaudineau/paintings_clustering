@@ -11,11 +11,6 @@ def knn_to_sparse_distance_matrix(neighbors: np.ndarray, distances: np.ndarray) 
     """
     Convert the (n, k) KNN neighbour graph produced by knn.run_knn() into a
     symmetric sparse CSR distance matrix for HDBSCAN(metric='precomputed').
-
-    The KNN graph is directed (i→j does not imply j→i), so we symmetrize by
-    keeping the *minimum* distance observed for each pair.  Structural zeros
-    mean *unknown distance* — not zero — which is the correct semantics for a
-    sparse precomputed matrix in HDBSCAN.
     """
     n = neighbors.shape[0]
     best: dict[tuple[int, int], float] = {}
@@ -37,7 +32,7 @@ def knn_to_sparse_distance_matrix(neighbors: np.ndarray, distances: np.ndarray) 
     return csr_matrix((dd, (ii, jj)), shape=(n, n), dtype=np.float64)
 
 
-# Noise reassignment
+# Noise reassignment (AI used)
 
 def assign_noise_to_nearest_cluster(
     labels: np.ndarray, neighbors: np.ndarray, max_iter: int = 100
@@ -45,12 +40,6 @@ def assign_noise_to_nearest_cluster(
     """
     Give every noise point (label -1) the cluster of its nearest already-clustered
     KNN neighbour, so HDBSCAN's noise is folded back into the clustering.
-
-    pynndescent returns neighbours sorted by ascending distance, so the first
-    non-noise entry in neighbors[i] is the closest clustered point to i. The pass
-    is repeated: once a noise point is labelled it can in turn label its own noise
-    neighbours, letting labels propagate along chains. Points whose whole KNN
-    neighbourhood stays noise (genuinely disconnected) keep label -1.
 
     Args:
         labels    : (n,) HDBSCAN labels (-1 = noise), modified on a copy.
@@ -122,7 +111,7 @@ def run_hdbscan(
     D_sparse = knn_to_sparse_distance_matrix(neighbors, distances)
 
     # Clusters
-    print("Running HDBSCAN…")
+    print("Running HDBSCAN...")
     hdbscan_kwargs = dict(
         metric="precomputed",
         min_cluster_size=min_cluster_size,

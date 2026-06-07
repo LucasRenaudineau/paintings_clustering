@@ -85,6 +85,19 @@ def find_most_uniform_crop(image: np.ndarray, crop_size: int = CROP_SIZE) -> np.
     return image[y:y + cs, x:x + cs]
 
 
+def to_grayscale_3ch(image: np.ndarray) -> np.ndarray:
+    """
+    Convert a BGR image to grayscale and replicate the luminance across all 3
+    channels (so it can still be fed to the 3-channel ResNet input).
+
+    Used for the texture crop: graying the crop removes hue/chroma, so the crop's
+    ResNet activations describe texture rather than colour and become nearly
+    colour-invariant when compared with cosine distance.
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+
 # Image preprocessing
 
 def preprocessing_image(image: np.ndarray, pad: bool = True) -> np.ndarray:
@@ -108,7 +121,7 @@ def preprocessing_image(image: np.ndarray, pad: bool = True) -> np.ndarray:
     resized = cv2.resize(rgb, INPUT_SHAPE, interpolation=cv2.INTER_LINEAR)
 
     # applying resnet50 preprocessing => make a tensor [(224,224,3) -> (3,224,224)], then normalize with ResNet normalization values
-    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])])        # Used AI for this preprocessing
+    transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225])]) # Used AI for this preprocessing
     
     tensor = transform(resized)
     return tensor.unsqueeze(0) # adding batch dimension : (1, 3, 224, 224)

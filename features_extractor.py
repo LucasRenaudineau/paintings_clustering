@@ -88,22 +88,26 @@ def extract_features(image, feature_model):
 def extract_crop_features(image, feature_model):
     """
     Extract activations for the most uniform CROP_SIZE x CROP_SIZE region of the
-    image (see preprocessing.find_most_uniform_crop). The crop is already square,
-    so it is preprocessed with pad=False before being fed to ResNet.
+    image (see preprocessing.find_most_uniform_crop).
+
+    The crop is converted to grayscale (luminance replicated to 3 channels) before
+    ResNet so its activations describe *texture* rather than colour.
 
     Returns the same 5-layer activation list as extract_features().
     """
     crop = find_most_uniform_crop(image)
-    return _run_feature_model(preprocessing_image(crop, pad=False), feature_model)
+    crop_gray = to_grayscale_3ch(crop)
+    return _run_feature_model(preprocessing_image(crop_gray, pad=False), feature_model)
 
 
 def extract_all_features(image, feature_model):
     """
-    Combined descriptor used for clustering: the 5 activations of the full image
-    followed by the 5 activations of the most uniform crop -> list of 10 arrays.
+    Combined descriptor used for clustering: the 5 activations of the full (colour)
+    image followed by the 5 activations of the most uniform grayscale crop -> list
+    of 10 arrays.
 
-        0..4  -> full-image activations  (conv1_relu .. conv5_block3_out)
-        5..9  -> uniform-crop activations (same layers)
+        0..4  -> full-image activations    (conv1_relu .. conv5_block3_out), colour
+        5..9  -> uniform-crop activations  (same layers), grayscale texture
     """
     return extract_features(image, feature_model) + extract_crop_features(image, feature_model)
 
