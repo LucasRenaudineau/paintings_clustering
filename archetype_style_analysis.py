@@ -109,7 +109,7 @@ class ArchetypeGenerator:
         if m != 1800:
             raise ValueError("Longest dimension is not of size 1800")
         x_raw = self.transform(img).reshape(1, -1)
-        x_raw_reduced = self.pca.transform(x_raw)
+        x_raw_reduced = self.ipca.transform(x_raw)
         return self.archetype.transform(x_raw_reduced)
 
     def classify_hard(self, x):

@@ -9,6 +9,7 @@ import gc
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from archetype_visualisation import *
+from sklearn.cluster import k_means
 from sklearn.manifold import TSNE 
 from sklearn.metrics import silhouette_score, pairwise_distances
 import scipy.cluster.hierarchy as hcluster
@@ -22,7 +23,7 @@ for i in range(N):
 
 print(x.shape)
 x_flattened = x.reshape(N, -1)
-pca = PCA(n_components=15)
+pca = PCA(n_components=32)
 x_pca = pca.fit_transform(x_flattened)
 print(f"x_pca shape : {x_pca.shape}")
 
@@ -31,28 +32,13 @@ class DeepClusterer:
     **Deep Plug-and-Play Clustering with Unknown Number of Clusters** by *An Xiao et al.*"""
     def __init__(self, model, data, dist=np.linalg.norm, epochs=100):
         self.x = data
-        self.N = len(self.data)
+        self.N = len(self.x)
         self.model = model
         self.dist = dist
         self.labels = np.array([np.arange(self.N)]) # Initialization Everything in the same cluster
         self.lambd = 0.5
         self.K = len(self.labels)
         self.n_eps = epochs
-    
-    def k_means(self, k, eps=100):
-        centroids=np.choose(k, self.x)
-        x_clusters = [np.argmin([np.linalg.norm(self.x[i]-centroids[j])for j in range(k)]) for i in range(len(self.x))]
-        clusters = [np.where(x_clusters==i)[0] for i in range(k)]
-        old_clusters = clusters
-        for ep in range(eps):
-            centroids = [np.mean(clusters[i]) for i in range(k)]
-            x_clusters = [np.argmin([np.linalg.norm(self.x[i]-centroids[j])for j in range(k)]) for i in range(len(self.x))]
-            clusters = [np.where(x_clusters==i)[0] for i in range(k)]
-            
-            if np.equal(clusters, old_clusters):
-                break # convergence
-            old_clusters = clusters
-        return centroids, clusters
     
     def D(self, k1, k2):
         for i in range(len(np.where(self.labels==k1)[0])):
@@ -80,10 +66,20 @@ class DeepClusterer:
         return
 
     def cluster_split(self, k, k1, k2):
-        return
+        labs = self.labels
+        labs[k]=k1
+        labs.insert(k+1, k2)
+        self.labels = labs
+        self.K += 1   
     
     def cluster_merge(self, k1,k2):
-        return
+        i = min(k1, k2)
+        j = max(k1, k2)
+        labs = self.labels
+        labs[i]= np.concatenate(labs[i], labs[j])
+        labs.pop(j)
+        self.labels = labs
+        self.K -= 1
     
     def clusterize(self):
         for epoch in range(self.n_eps):
@@ -110,8 +106,9 @@ class DeepClusterer:
             # ...
         return
 
-
-
-
+clusterer=DeepClusterer(None,x)
+centroids, clusters=clusterer.k_means(3)
+print(centroids)
+print(clusterer)
             
             
