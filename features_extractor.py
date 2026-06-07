@@ -52,15 +52,28 @@ def load_model():
 
     return model, feature_model
 
+def _run_feature_model(tensor, feature_model):
+    """Run a preprocessed (1,3,224,224) tensor through the multi-output model
+    and return the activations as a list of (1, H, W, C) NumPy arrays."""
+    tensor = tensor.to(device)
+    with torch.no_grad():
+        activations = feature_model(tensor)
+    numpy_activations = []
+    for layer_name, t in activations.items():
+        # Go back to (1,H,W,C)
+        numpy_activations.append(t.cpu().detach().numpy().transpose(0, 2, 3, 1))
+    return numpy_activations
+
+
 def extract_features(image, feature_model):
     """
-    Run a single image through the multi-output feature model and return the
-    activation maps of every intermediate layer.
- 
+    Run a single (full) image through the multi-output feature model and return
+    the activation maps of every intermediate layer.
+
     Args:
         image: Raw image as a NumPy array (H, W, 3), BGR uint8.
         feature_model: The multi-output Keras Model returned by load_model().
- 
+
     Returns:
         Array mapping each layer name in order to its activation NumPy array.
             0  -> (1, 112, 112, 64)      (conv1_relu)
@@ -69,24 +82,37 @@ def extract_features(image, feature_model):
             3  -> (1, 14, 14, 1024)      (conv4_block6_out)
             4  -> (1, 7, 7, 2048)        (conv5_block3_out)
     """
-    
-    tensor_preprocess_image = preprocessing_image(image)
-    tensor_preprocess_image=tensor_preprocess_image.to(device)
+    return _run_feature_model(preprocessing_image(image), feature_model)
 
-    with torch.no_grad():
-        activations = feature_model(tensor_preprocess_image)
-    numpy_activations = []
-    for layer_name, tensor in activations.items():
-        # Go back to (1,H,W,C)
-        numpy_activations.append(tensor.cpu().detach().numpy().transpose(0, 2, 3, 1))
- 
-    return numpy_activations
+
+def extract_crop_features(image, feature_model):
+    """
+    Extract activations for the most uniform CROP_SIZE x CROP_SIZE region of the
+    image (see preprocessing.find_most_uniform_crop). The crop is already square,
+    so it is preprocessed with pad=False before being fed to ResNet.
+
+    Returns the same 5-layer activation list as extract_features().
+    """
+    crop = find_most_uniform_crop(image)
+    return _run_feature_model(preprocessing_image(crop, pad=False), feature_model)
+
+
+def extract_all_features(image, feature_model):
+    """
+    Combined descriptor used for clustering: the 5 activations of the full image
+    followed by the 5 activations of the most uniform crop -> list of 10 arrays.
+
+        0..4  -> full-image activations  (conv1_relu .. conv5_block3_out)
+        5..9  -> uniform-crop activations (same layers)
+    """
+    return extract_features(image, feature_model) + extract_crop_features(image, feature_model)
+
 
 if __name__ == "__main__":
     _, feature_model = load_model()
     test_path = "ArtemisArt/afro - afro-basaldella_1912/afro_1.jpg"
     img = imread_safe(test_path)
-    features = extract_features(img, feature_model)
-    print("Features shapes :")
+    features = extract_all_features(img, feature_model)
+    print("Features shapes (0-4 full image, 5-9 uniform crop):")
     for activation in features:
         print(f"{str(activation.shape)}")

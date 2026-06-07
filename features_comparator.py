@@ -29,31 +29,40 @@ def cosineSimilarity(activation1, activation2):
     
     
 
-# Distance function between 2 activations
+# One weight per activation, in order:
+#   0  conv1_relu        full image
+#   1  conv2_block3_out  full image
+#   2  conv3_block4_out  full image
+#   3  conv4_block6_out  full image
+#   4  conv5_block3_out  full image
+#   5  conv1_relu        uniform crop
+#   6  conv2_block3_out  uniform crop
+#   7  conv3_block4_out  uniform crop
+#   8  conv4_block6_out  uniform crop
+#   9  conv5_block3_out  uniform crop
+LAYER_WEIGHTS = (1.0, 0.1, 0.1, 1.0, 1.0, 1.0, 0.1, 0.1, 1.0, 1.0)
+
+
+# Distance function between 2 activation sets
 def distance(features1, features2):
-    """ 
-    Compute the norm with every features of 2 images.
-    For now, it is a sum of every cosineSimilarity of each activation.
-    
-    Args:
-        2 Arrays mapping each layer name in order to its activation NumPy array.
-            0  -> (1, 112, 112, 64)      (conv1_relu)
-            1  -> (1, 56, 56, 256)       (conv2_block3_out)
-            2  -> (1, 28, 28, 512)       (conv3_block4_out)
-            3  -> (1, 14, 14, 1024)      (conv4_block6_out)
-            4  -> (1, 7, 7, 2048)        (conv5_block3_out)
-        
-    Returns:
-        float : value of the distance measure between features1 and features2  
     """
-    
-    dist = 0
-    dist += cosineSimilarity(features1[0],features2[0])
-    dist += 0.1*cosineSimilarity(features1[1],features2[1])
-    dist += 0.1*cosineSimilarity(features1[2],features2[2])
-    dist += cosineSimilarity(features1[3],features2[3])
-    dist += cosineSimilarity(features1[4],features2[4])
-    
+    Compute the norm with every features of 2 images.
+    Sum of every cosineSimilarity of each activation, over both the full image
+    (indices 0-4) and the most uniform crop (indices 5-9).
+
+    Args:
+        2 lists of 10 activation NumPy arrays (see extract_all_features):
+            0..4  full image  -> conv1_relu .. conv5_block3_out
+            5..9  uniform crop -> same layers
+
+    Returns:
+        float : value of the distance measure between features1 and features2
+    """
+
+    dist = 0.0
+    for layer, w in enumerate(LAYER_WEIGHTS):
+        dist += w * cosineSimilarity(features1[layer], features2[layer])
+
     return dist
 
 # Test function to compute distances between an image and a list of images
@@ -61,8 +70,8 @@ def compute_distances_one_to_many(image_path,comparedImagesPaths, feature_model)
     image = imread_safe(image_path)
     comparedImages = [imread_safe(path) for path in comparedImagesPaths]
     
-    activation_set = extract_features(image, feature_model)
-    compared_activations_sets = [extract_features(im, feature_model) for im in comparedImages]
+    activation_set = extract_all_features(image, feature_model)
+    compared_activations_sets = [extract_all_features(im, feature_model) for im in comparedImages]
 
     distances = []
 
