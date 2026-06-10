@@ -1,5 +1,5 @@
 import numpy as np
-import torch
+from torch import nn
 from torchvision import models
 from torchvision.models.feature_extraction import create_feature_extractor
 from archetypes import AA
@@ -27,6 +27,26 @@ pca = PCA(n_components=32)
 x_pca = pca.fit_transform(x_flattened)
 print(f"x_pca shape : {x_pca.shape}")
 
+# Deep Learning Part -------------------------
+class Clustering_end:
+    def __init__(self, input, K):
+        super().__init__()
+        self.fc = nn.Linear(input, K, bias=False)
+    
+    def forward(self, x):
+        return nn.functional.softmax(self.fc(x))
+
+class Network:
+    def __init__(self, model, mid_dim, K):
+        self.main_nn = model
+        self.end = Clustering_end(mid_dim, K) 
+    def forward(self, x):
+        torch.no_grad()
+        y = nn.functional.normalize(self.main_nn(x))
+        z = self.end(y)
+        return z
+# -----------------------------------------------
+
 class DeepClusterer:
     """This class implements the Clustering With unkown number of clusters method proposed in the paper :\\
     **Deep Plug-and-Play Clustering with Unknown Number of Clusters** by *An Xiao et al.*"""
@@ -38,6 +58,7 @@ class DeepClusterer:
         self.labels = np.array([np.arange(self.N)]) # Initialization Everything in the same cluster
         self.lambd = 0.5
         self.K = len(self.labels)
+        self.probs = np.array([[1/self.K for i in range(self.K)] for j in range(self.N)]).T
         self.n_eps = epochs
     
     def D(self, k1, k2):
@@ -54,16 +75,39 @@ class DeepClusterer:
     def loss(self):
         return self.compactness(self.K)-(self.lambd/self.K) * self.separation(self.K)
     
-    def JS_div(k1, k2):
-        if np.isscalar(k1) and np.isscalar(k2):
-            return
-        return
+    def JS_div(self, p, q):
+        """
+        Calculates the JS divergence where p and q are probabilities of shape (N,)
+        """
+        def D_KL(P, Q):
+            eps = 1e-14
+            if len(P)!=len(Q):
+                raise TabError("P and Q have not the same lenght.")
+            return np.sum([P[i]*np.log((P(i)+eps)/(Q(i)+eps)) for i in range(len(P))])
+        M = (p+q)/2
+        return (D_KL(p, M)+D_KL(q, M))/2
+    
+    def JS_div_clusters(self, k1, k2):
+        """Calculates the JS divergence between two clusters ``k1`` and ``k2``"""
+        p = self.probs[:, k1]
+        q = self.probs[:, k2]
+        if p.sum()!=0:
+            p = p / p.sum() 
+        if q.sum()!=0:
+            q = q / q.sum()
+        return self.JS_div(p, q)
 
     def get_split_threshold(self):
         return self.lambd / (2*self.K * (self.lambd + self.K + 1)) * np.sum([[self.JS_div(k1,k2) for k1 in range(self.K) if k1!=k2]for k2 in range(self.K)])
     
-    def get_merge_threshold(self):
-        return
+    def get_merge_threshold(self, merged_probs):
+        final_sum = 0
+        for k1 in range(self.K-2):
+            p = self.probs[:, k1]
+            if p.sum()!=0:
+                p = p / p.sum() 
+            final_sum += self.JS_div(p, merged_probs)
+        return (self.lambd)/(2*(self.K-1)*(self.lambd+self.K))*final_sum
 
     def cluster_split(self, k, k1, k2):
         labs = self.labels
@@ -99,7 +143,8 @@ class DeepClusterer:
             mask = ~np.eye(self.K, dtype=bool) 
             cand_k2, cand_k1 = np.unravel_index(np.argmin(all_divs[mask]), (self.K, self.K))
             J_div = self.JS_div(cand_k1, cand_k2)
-            Tm = self.get_merge_threshold()
+            merged_probs = (self.probs[k1]+self.probs[k2])/2
+            Tm = self.get_merge_threshold(merged_probs)
             if J_div < Tm:
                 self.cluster_merge(cand_k1, cand_k2)
             # Apply A to training network N with K*.
