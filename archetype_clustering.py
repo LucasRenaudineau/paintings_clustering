@@ -97,21 +97,57 @@ class DeepClusterer:
             final_sum += self.JS_div(p, merged_probs)
         return (self.lambd)/(2*(self.K-1)*(self.lambd+self.K))*final_sum
 
-    def cluster_split(self, k, k1, k2):
-        labs = self.labels
-        labs[k]=k1
-        labs.insert(k+1, k2)
-        self.labels = labs
-        self.K += 1   
+    def cluster_split(self, k, k1, k2, trying = True):
+        """Splitting the clusters.
+        - ``k`` : the index of the cluster we should split.
+        - ``k1`` and ``k2`` : elements of the two splitted subclusters.
+        """
+        # Modification of the parameters
+        if not trying:
+            labs = self.labels
+            labs[k]=k1
+            labs.insert(k+1, k2)
+            self.labels = labs
+            self.K += 1   
+        # Modification of the model
+        model = self.model.copy()
+        old_weights=model.fc.weight.data
+        K, dim = old_weights.shape
+        new_weights = torch.zeros(K + 1, dim, device=old_weights.device)
+        new_weights[:k] = old_weights[:k]
+        new_weights[k] = k1
+        new_weights[k+1] = k2
+        new_weights[k+2:] = old_weights[k+1:]
+        model.head.fc = nn.Linear(dim, K + 1, bias=False)
+        model.head.fc.weight.data.copy_(new_weights)
+        if not trying:
+            self.model = model
+        return model
     
-    def cluster_merge(self, k1,k2):
-        i = min(k1, k2)
-        j = max(k1, k2)
-        labs = self.labels
-        labs[i]= np.concatenate(labs[i], labs[j])
-        labs.pop(j)
-        self.labels = labs
-        self.K -= 1
+    def cluster_merge(self, k1,k2, trying=True):
+        # Modification of the parameters
+        if not trying:
+            i = min(k1, k2)
+            j = max(k1, k2)
+            labs = self.labels
+            labs[i]= np.concatenate(labs[i], labs[j])
+            labs.pop(j)
+            self.labels = labs
+            self.K -= 1
+        # Modification of the model
+        model = self.model.copy()
+        old_weights=model.fc.weight.data
+        K, dim = old_weights.shape
+        merged_w = 0.5 * (old_weights[k1] + old_weights[k2])
+        keep = [i for i in range(K) if i != k2]
+        new_weight = old_weights[keep].clone()
+        new_weight[k1] = merged_w 
+        model.head.fc = nn.Linear(self.feat_dim, K - 1, bias=False)
+        model.head.fc.weight.data.copy_(new_weight)
+        if not trying:
+            self.model = model
+        return model
+
     
     def train_model(self, epochs=None):
         if epochs is None:
@@ -127,6 +163,16 @@ class DeepClusterer:
             loss = self.loss()
             loss.backward()
             self.optimizer.step()
+        
+    def train_with_split(self, epochs=None):
+        if epochs is None:
+            epochs = self.n_eps
+        
+
+    def train_with_merge(self, epochs=None):
+        if epochs is None:
+            epochs = self.n_eps
+        
 
     def clusterize(self):
         for epoch in range(self.n_eps):
@@ -147,7 +193,7 @@ class DeepClusterer:
             # Apply A to training the network N with current number of cluster K* and equ 7
             if split:
                 # train with split
-                pass
+                self.train_with_split()
             all_divs = np.array([[self.JS_div(k1, k2) for k1 in range(self.K)]for k2 in range(self.K)])
             mask = ~np.eye(self.K, dtype=bool) 
             cand_k2, cand_k1 = np.unravel_index(np.argmin(all_divs[mask]), (self.K, self.K))
@@ -160,8 +206,9 @@ class DeepClusterer:
             # Apply A to training network N with K*.
             if merge:
                 # train with merge
-                pass
+                self.train_with_merge()
         return
+    
 
 clusterer=DeepClusterer(None,x)
 centroids, clusters=clusterer.k_means(3)
