@@ -1,5 +1,3 @@
-"""Same file as features extractor but using PyTorch."""
-
 import numpy as np
 import cv2
 import torch
@@ -16,22 +14,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Used ai to know the corresponding names for pytorch
 FEATURE_LAYER_NAMES = {
-    "relu": "conv1_relu",             # Stage 1 — low-level edges & textures
-    "layer1.2": "conv2_block3_out",   # Stage 2 — simple shapes (fin du 3e bloc)
-    "layer2.3": "conv3_block4_out",   # Stage 3 — mid-level patterns (fin du 4e bloc)
-    "layer3.5": "conv4_block6_out",   # Stage 4 — high-level semantics (fin du 6e bloc)
-    "layer4.2": "conv5_block3_out",   # Stage 5 — near-final representations (fin du 3e bloc)
+    "relu": "conv1_relu",
+    "layer1.2": "conv2_block3_out",
+    "layer2.3": "conv3_block4_out",
+    "layer3.5": "conv4_block6_out",
+    "layer4.2": "conv5_block3_out",
 }
 
 def load_model():
     """
-    Load ResNet50 from ./models/resnet50 if it exists, otherwise download the
+    Load ResNet50 from ./models/resnet50.pth if it exists, otherwise download the
     ImageNet weights and save them there for future runs.
- 
-    Returns:
-        base_model: the full ResNet50 Keras model.
-        feature_model: a multi-output Model that returns the activations of
-                       every layer listed in FEATURE_LAYER_NAMES.
     """
     try:
         model = models.resnet50(weights=None)
@@ -67,13 +60,6 @@ def _run_feature_model(tensor, feature_model):
 
 def extract_features(image, feature_model):
     """
-    Run a single (full) image through the multi-output feature model and return
-    the activation maps of every intermediate layer.
-
-    Args:
-        image: Raw image as a NumPy array (H, W, 3), BGR uint8.
-        feature_model: The multi-output Keras Model returned by load_model().
-
     Returns:
         Array mapping each layer name in order to its activation NumPy array.
             0  -> (1, 112, 112, 64)      (conv1_relu)
@@ -86,26 +72,13 @@ def extract_features(image, feature_model):
 
 
 def extract_crop_features(image, feature_model):
-    """
-    Extract activations for the most uniform CROP_SIZE x CROP_SIZE region of the
-    image (see preprocessing.find_most_uniform_crop).
-
-    The crop is converted to grayscale (luminance replicated to 3 channels) before
-    ResNet so its activations describe *texture* rather than colour.
-
-    Returns the same 5-layer activation list as extract_features().
-    """
     crop = find_most_uniform_crop(image)
-    crop_gray = to_grayscale_3ch(crop)
+    crop_gray = to_grayscale_3ch(crop) # just comment this line to keep colors
     return _run_feature_model(preprocessing_image(crop_gray, pad=False), feature_model)
 
 
 def extract_all_features(image, feature_model):
     """
-    Combined descriptor used for clustering: the 5 activations of the full (colour)
-    image followed by the 5 activations of the most uniform grayscale crop -> list
-    of 10 arrays.
-
         0..4  -> full-image activations    (conv1_relu .. conv5_block3_out), colour
         5..9  -> uniform-crop activations  (same layers), grayscale texture
     """

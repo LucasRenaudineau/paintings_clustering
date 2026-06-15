@@ -37,18 +37,6 @@ def knn_to_sparse_distance_matrix(neighbors: np.ndarray, distances: np.ndarray) 
 def assign_noise_to_nearest_cluster(
     labels: np.ndarray, neighbors: np.ndarray, max_iter: int = 100
 ) -> np.ndarray:
-    """
-    Give every noise point (label -1) the cluster of its nearest already-clustered
-    KNN neighbour, so HDBSCAN's noise is folded back into the clustering.
-
-    Args:
-        labels    : (n,) HDBSCAN labels (-1 = noise), modified on a copy.
-        neighbors : (n, k) KNN indices from knn.run_knn(), sorted by distance.
-        max_iter  : safety cap on propagation passes.
-
-    Returns:
-        (n,) int array of labels with (almost) no -1 remaining.
-    """
     labels = labels.copy()
     for _ in range(max_iter):
         noise_idx = np.where(labels == -1)[0]
@@ -83,9 +71,6 @@ def run_hdbscan(
         ./outputs/hdbscan_classes/class1/       for images in cluster 1
         ...
         ./outputs/hdbscan_classes/class_noise/  for leftover noise points
-
-    Uses the approximate KNN graph.
-
     Args:
         n                : number of images to sample from the dataset
         n_neighbors      : neighbours per image in the KNN graph; a denser graph
@@ -107,7 +92,7 @@ def run_hdbscan(
     # Reuse knn.py
     neighbors, distances, paths = run_knn(n, n_neighbors=n_neighbors, seed=seed)
 
-    print("Building sparse distance matrix from KNN graph…")
+    print("Building sparse distance matrix from KNN graph...")
     D_sparse = knn_to_sparse_distance_matrix(neighbors, distances)
 
     # Clusters
@@ -115,8 +100,8 @@ def run_hdbscan(
     hdbscan_kwargs = dict(
         metric="precomputed",
         min_cluster_size=min_cluster_size,
-        min_samples=min_samples,            # key noise-reduction lever
-        cluster_selection_method="eom",     # "eom" absorbs more points than "leaf"
+        min_samples=min_samples,
+        cluster_selection_method="eom", # "eom" absorbs more points than "leaf"
     )
     if max_cluster_size is not None:
         hdbscan_kwargs["max_cluster_size"] = max_cluster_size
