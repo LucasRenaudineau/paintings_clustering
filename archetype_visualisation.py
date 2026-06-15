@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.transforms.functional as TF
 
-
 # ---------------------------------------------------------------------------
 # VGG19-BN tapped nodes and their channel counts:
 #
@@ -19,7 +18,7 @@ VGG19BN_P_LIST = [64, 64, 128, 128, 256]
 
 # ImageNet normalisation constants (must match preprocessing_image in preprocessing.py)
 _IMAGENET_MEAN = [0.485, 0.456, 0.406]
-_IMAGENET_STD  = [0.229, 0.224, 0.225]
+_IMAGENET_STD = [0.229, 0.224, 0.225]
 
 
 def unpack_Z_full(Z_full_numpy, p_list, device):
@@ -63,16 +62,18 @@ def unpack_Z_full(Z_full_numpy, p_list, device):
     idx = 0
 
     for p in p_list:
-        norm = p * (p - 1)   # inverse of the normalisation applied in transform()
+        norm = p * (p - 1)  # inverse of the normalisation applied in transform()
 
-        mu_flat    = Z_full_numpy[idx : idx + p]
-        idx       += p
+        mu_flat = Z_full_numpy[idx : idx + p]
+        idx += p
         sigma_flat = Z_full_numpy[idx : idx + p * p]
-        idx       += p * p
+        idx += p * p
 
         # Multiply back by p*(p-1) to undo the normalisation stored in X/Z
-        mu    = torch.tensor(mu_flat    * norm, dtype=torch.float32, device=device).view(p, 1)
-        sigma = torch.tensor(sigma_flat * norm, dtype=torch.float32, device=device).view(p, p)
+        mu = torch.tensor(mu_flat * norm, dtype=torch.float32, device=device).view(p, 1)
+        sigma = torch.tensor(
+            sigma_flat * norm, dtype=torch.float32, device=device
+        ).view(p, p)
 
         cibles.append({"mu": mu, "sigma": sigma})
 
@@ -85,8 +86,8 @@ def total_variation_loss(img):
     Encourages local smoothness (brush-stroke-like texture) without blurring
     across long distances.
     """
-    tv_h = torch.mean(torch.abs(img[:, :, 1:, :]  - img[:, :, :-1, :]))
-    tv_w = torch.mean(torch.abs(img[:, :, :, 1:]  - img[:, :, :, :-1]))
+    tv_h = torch.mean(torch.abs(img[:, :, 1:, :] - img[:, :, :-1, :]))
+    tv_w = torch.mean(torch.abs(img[:, :, :, 1:] - img[:, :, :, :-1]))
     return tv_h + tv_w
 
 
@@ -133,7 +134,7 @@ def synthetiser_archetype(
     p_list=VGG19BN_P_LIST,
     image_size=224,
     lr=0.01,
-    poids_style=1.0,
+    poids_style=[1.0, 0.8, 0.5, 0.3, 0.1],
     poids_tv=0.1,
     log_every=100,
 ):
@@ -211,9 +212,11 @@ def synthetiser_archetype(
     )
     optimizer = optim.Adam([image_generee], lr=lr)
 
-    print(f"Début de la synthèse ({n_iteration} itérations, "
-          f"image {image_size}x{image_size}, lr={lr}, "
-          f"poids_style={poids_style}, poids_tv={poids_tv})...")
+    print(
+        f"Début de la synthèse ({n_iteration} itérations, "
+        f"image {image_size}x{image_size}, lr={lr}, "
+        f"poids_style={poids_style}, poids_tv={poids_tv})..."
+    )
 
     # --- 4. Optimisation loop ------------------------------------------------
     for iteration in range(n_iteration):
@@ -234,8 +237,12 @@ def synthetiser_archetype(
         for i, torch_f_map in enumerate(features_actuelles_dict.values()):
             mu_actuel, sigma_actuel = calculer_mu_sigma_pytorch(torch_f_map)
             cible = cibles_couches[i]
-            loss_style = loss_style + F.mse_loss(mu_actuel,    cible["mu"])    * poids_style
-            loss_style = loss_style + F.mse_loss(sigma_actuel, cible["sigma"]) * poids_style
+            loss_style = (
+                loss_style + F.mse_loss(mu_actuel, cible["mu"]) * poids_style[i]
+            )
+            loss_style = (
+                loss_style + F.mse_loss(sigma_actuel, cible["sigma"]) * poids_style[i]
+            )
 
         # TV regularisation (smoothness prior)
         loss_tv = total_variation_loss(image_generee)
@@ -249,13 +256,13 @@ def synthetiser_archetype(
 
         if iteration % log_every == 0:
             # Use scientific notation so near-zero values are visible (not "0.00")
-            print(f"  Itération {iteration:04d} | "
-                  f"Style: {loss_style.item():.4e} | "
-                  f"TV: {loss_tv.item():.4e} | "
-                  f"Total: {loss_totale.item():.4e}")
+            print(
+                f"  Itération {iteration:04d} | "
+                f"Style: {loss_style.item():.4e} | "
+                f"TV: {loss_tv.item():.4e} | "
+                f"Total: {loss_totale.item():.4e}"
+            )
 
     # --- 5. Return as a numpy HWC array in [0, 1] ----------------------------
-    image_finale = (
-        image_generee.detach().cpu().squeeze(0).permute(1, 2, 0).numpy()
-    )
+    image_finale = image_generee.detach().cpu().squeeze(0).permute(1, 2, 0).numpy()
     return image_finale
