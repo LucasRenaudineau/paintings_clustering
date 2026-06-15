@@ -1,0 +1,46 @@
+# IMA Report
+
+## Introduction
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+## Archetypal Classification
+
+In this section we will discuss our implementation using archetypal classification. Our method implements the paper *Unsupervised Learning of Artistic Styles with Archetypal Style Analysis* from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
+
+### Transformation of the data
+
+In order to find an image's style, we will encode it into a latent space. The fisrt step is to transform the images of the dataset to be in an appropriate format. In the dataset, most of the images have different shapes. We decided to have each image be of shape 1800x1800 as almost every image has its longest dimension of size 1800. The reshaping is done using padding on the shorter dimension where we extend the side by replicating the other side. If an image does not have a longer size of 1800 we dispose of it. Finally, we reshape it to a size of 224x224 to be used by the VGG-19 neural network. In order to get information from our images we use the VGG-19 network from which we will extract the features. For an image $I$, we extract from the five convolutional layers of VGG-19 the feature maps $F_1,..., F_5$ obtained from $I$. From each $F_i$ which are of shape (channel, height, width), we take the mean $\mu_i$ and the covariance matrix $C_i$ over each channel on the whole image. That means that $\mu_i[c_k]$ and $C_i[c_k]$ are the mean and covariance matrix respectfully for channel $c_k$ of feature map $F_i$. We then concatenate the values. We obtain a very large vector which we normalize by $p(p+1)$, where $p$ is the number of channels, because it helps with balance in the dataset according to the paper. Once every vector has been computed for each image, we have vectors of length around 100,000.
+
+To keep only the useful information we make a dimension reduction through PCA to keep only 4096 dimensions in our vectors. The main issue we went through with the PCA is the memory shortage caused by the overwhelming size of the matrix composed of the data vectors. At this point we were trying to apply our method on 7000 images which led to a 7000x100,000 matrix and it could not be loaded all at once for the PCA. To solve this issue, we implemented an Incremental PCA using the *scikit* library which has a constant memory complexity. We stored each data vector on the disk and loaded them by batches of size 200 to be applied one by one into the Incremental PCA. Due to mathematical issues, we only kept 512 components after the Incremental PCA which is still sufficient to explain most of the data variability.
+
+### Archetype Generation
+
+The next step is to find the archetypes from the latent space from the previously transformed data. The idea is to find latent variables $Z_i$ such that each vector data $X_i$ can be written as a convex combination of the latent vectors $(\bold{X} = \bold{Z}\alpha)$ while also having each $Z_i$ written as a convex combination of the data vectors $(\bold{Z}=\bold{X}\beta)$. We get the following optimization problem:
+$$ \underset{\underset{\beta_1,...,\beta_k}{\alpha_1,...,\alpha_n}}{\min}\frac{1}{n} \sum_{i=1}^n ||x_i-\bold{Z}\alpha_i||^2 \text{ s.t } \bold{z}_j = \bold{X}\beta_j \text{ for all }j=1,...,k$$
+
+We tries to implement another paper for solving this optimization problem but failed to because it makes use of three complicated and imbricated algorithm each attempting to solve an easier optimization problem but do not provide a way to compute the very last one which is still very challenging. In the end we used the *archetype* library from python which is structured like the *scikit* library. It could fit on the data provided and transform to give the latent variables $Z_i$ and the convex combination coefficient $\alpha$ and $\beta$. The transform function could also compute the coefficient $\alpha_{n+1}$ from the known latent variables in case we want to test on an image that wasn't in the training data set which would provide very useful for time management on the testing phase.
+
+Using the $\beta$ and $\alpha$ vectors, we could determine which image led to the creation of each latent variable and how each latent variable would provide data for each image. We only had to verify how latent variable were related to a style. To do this we try to generate an image $I^*$ such that its data vector is the closest to the latent variable aimed at. The Incremental PCA implementation allows for an inversion of the PCA which allows us to partially create an "original" data vector for the latent variables. We can extract from this vector the informations corresponding to each "original" feature map. We will design those as $F_i^*$ with parameter $\mu_i^*$ and $C_i^*$ as its mean and covariance matrix respectively. Now we can define the following loss function: $$\mathcal{L}(I, I^*) = \sum_{i=0}^5\gamma_i\left(||\mu_i - \mu_i^*||^2 + ||C_i - C_i^*||^2\right) + \lambda TV(I^*)$$
+Where $TV$ designs the Total Variation function, $\gamma_i$ is a weight coefficient for the $i$-th layer and $\lambda$ is the weight coefficient for the Total Variation regularization term. The generation is done through backpropagation with the Adam optimizer. The algorithm is as follows:
+
+For 500 iterations:
+
+- Initialization of $I^*$
+- We pass $I^*$ through VGG-19
+- We compute the loss function $\mathcal{L}(I, I^*)$
+- Backpropagation and update of $I^*$
+
+In the end we obtain images like this:![archetype0](archetype_0.png)
+
+### Archetype Clustering
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+## Classification via Feature Extraction
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+## AI Use
+
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
