@@ -7,11 +7,6 @@ import numba
 import random
 
 
-# Compact descriptors
-# Each activation (1, H, W, C) is reduced to its global-average-pool (C,) and
-# the 10 layers are concatenated into a single 7808-dim float32 vector:
-#   indices 0..3903    full COLOUR image     (conv1_relu .. conv5_block3_out)
-#   indices 3904..7807 uniform GRAYSCALE crop (same layers, texture), offset 3904
 
 def extract_gap_vector(features):
     """Reduce each activation to its GAP and concatenate -> (7808,) float32."""
@@ -62,16 +57,9 @@ def my_distance(a, b):
 
 def run_knn(n: int, n_neighbors: int = 5, seed: int = 42):
     """
-    Approximate KNN for n randomly selected images using pynndescent.
-
-    Args:
-        n            : number of images to sample from the dataset
-        n_neighbors  : number of nearest neighbors to retrieve per image
-        seed         : random seed for reproducibility
-
     Returns:
-        neighbors  : (n, n_neighbors) int array   — neighbor indices in paths
-        distances  : (n, n_neighbors) float array — corresponding distances
+        neighbors  : (n, n_neighbors) int array, neighbor indices in paths
+        distances  : (n, n_neighbors) float array, corresponding distances
         paths      : list of n selected image paths
     """
     random.seed(seed)
@@ -80,13 +68,13 @@ def run_knn(n: int, n_neighbors: int = 5, seed: int = 42):
     all_paths = find_paths(14553)
     paths = random.sample(all_paths, n)
 
-    print(f"Extracting features for {n} images…")
+    print(f"Extracting features for {n} images...")
     features_list = [extract_all_features(imread_safe(p), feature_model) for p in paths]
 
     # Build compact (n, 7808) feature matrix
     X = np.array([extract_gap_vector(f) for f in features_list])
 
-    print("Building approximate KNN graph (pynndescent)…")
+    print("Building approximate KNN graph (pynndescent)...")
     index = NNDescent(X, metric=my_distance, n_neighbors=n_neighbors)
     neighbors, distances = index.neighbor_graph   # (n, k), (n, k)
 
