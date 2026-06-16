@@ -128,6 +128,7 @@ def calculer_mu_sigma_pytorch(torch_f_map):
 def synthetiser_archetype(
     Z_archetype,
     pca_model,
+    scaler_model,
     extractor,
     device,
     n_iteration,
@@ -200,7 +201,9 @@ def synthetiser_archetype(
     np.ndarray, shape (image_size, image_size, 3), dtype float32, values in [0, 1]
     """
     # --- 1. Decode archetype from PCA space to raw descriptor space -----------
-    Z_full_numpy = pca_model.inverse_transform(Z_archetype.reshape(1, -1))[0]
+    Z_unpca = pca_model.inverse_transform(Z_archetype.reshape(1, -1))
+
+    Z_full_numpy = scaler_model.inverse_transform(Z_unpca)[0]
 
     # --- 2. Split into per-layer (mu, sigma) targets -------------------------
     cibles_couches = unpack_Z_full(Z_full_numpy, p_list, device)
