@@ -2,6 +2,10 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.transforms.functional as TF
+import umap
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # ---------------------------------------------------------------------------
 # VGG19-BN tapped nodes and their channel counts:
@@ -269,3 +273,21 @@ def synthetiser_archetype(
     # --- 5. Return as a numpy HWC array in [0, 1] ----------------------------
     image_finale = image_generee.detach().cpu().squeeze(0).permute(1, 2, 0).numpy()
     return image_finale
+
+
+def visualisation_2d(X, Z):
+    data = np.vstack((X, Z))
+    reducer = umap.UMAP()
+    embedding = reducer.fit_transform(data)
+    color = [sns.color_palette()[0]] * len(X) + [sns.color_palette()[5]] * len(Z)
+    plt.scatter(
+        embedding[:, 0],
+        embedding[:, 1],
+        c=color,
+        cmap="Spectral",
+        s=5,
+    )
+    plt.gca().set_aspect("equal", "datalim")
+    plt.title("UMAP projection of the archetypes", fontsize=24)
+    plt.savefig(f"UMAP_projection.png")
+    print("UMAP visualisation done !")

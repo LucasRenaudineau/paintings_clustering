@@ -185,31 +185,33 @@ if __name__ == "__main__":
         print(a.getPaintingsFromArchetype(0))
 
         # On choisit l'Archétype 0
-        Z_arch_0 = Z[0]
+        # Z_arch_0 = Z[0]
 
-        # Et on lance !
-        images_synthetisees = [
-            synthetiser_archetype(
-                Z_archetype=Z[i],
-                pca_model=pca_mod,
-                scaler_model=scaler,
-                extractor=feature_extractor,
-                device=device,
-                n_iteration=500,
-            )
-            for i in range(1)
-        ]
+        # # Et on lance !
+        # images_synthetisees = [
+        #     synthetiser_archetype(
+        #         Z_archetype=Z[i],
+        #         pca_model=pca_mod,
+        #         scaler_model=scaler,
+        #         extractor=feature_extractor,
+        #         device=device,
+        #         n_iteration=500,
+        #     )
+        #     for i in range(1)
+        # ]
 
-        for i in range(1):
-            plt.imshow(images_synthetisees[i])
-            plt.axis("off")
-            # plt.title(f"L'essence de l'Archétype {i}")
-            plt.savefig(
-                f"archetypes/archetype_{cur_archetype}.png",
-                bbox_inches="tight",
-                dpi=300,
-            )
-            print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
-            cur_archetype += 1
+        # for i in range(1):
+        #     plt.imshow(images_synthetisees[i])
+        #     plt.axis("off")
+        #     # plt.title(f"L'essence de l'Archétype {i}")
+        #     plt.savefig(
+        #         f"archetypes/archetype_{cur_archetype}.png",
+        #         bbox_inches="tight",
+        #         dpi=300,
+        #     )
+        #     print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
+        #     cur_archetype += 1
+
+        visualisation_2d(a.X, Z)
 
         plt.close()
