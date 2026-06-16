@@ -225,7 +225,7 @@ ArtemisArt.7z
 Liste-peintres-Artemisart.pdf
 *.png
 temp_feature
-
+*.html
 
 # Notes de réunions et documentation
 notes_reunions/
