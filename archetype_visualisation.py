@@ -5,7 +5,7 @@ import torchvision.transforms.functional as TF
 import umap
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.graph_objects as go
 
 # ---------------------------------------------------------------------------
 # VGG19-BN tapped nodes and their channel counts:
@@ -275,19 +275,59 @@ def synthetiser_archetype(
     return image_finale
 
 
-def visualisation_2d(X, Z):
+def visualisation_2d(X, Z, data_path):
     data = np.vstack((X, Z))
     reducer = umap.UMAP()
     embedding = reducer.fit_transform(data)
-    color = [sns.color_palette()[0]] * len(X) + [sns.color_palette()[5]] * len(Z)
-    plt.scatter(
-        embedding[:, 0],
-        embedding[:, 1],
-        c=color,
-        cmap="Spectral",
-        s=5,
+    paintings = embedding[: len(X)]
+    archetypes = embedding[len(X) :]
+
+    hover_text = [str(p).split("/")[-1] for p in data_path]
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=paintings[:, 0],
+            y=paintings[:, 1],
+            mode="markers",
+            marker=dict(color="gray", size=5, opacity=0.4),
+            text=hover_text,
+            hoverinfo="text",
+            name="Paintings",
+        )
     )
-    plt.gca().set_aspect("equal", "datalim")
-    plt.title("UMAP projection of the archetypes", fontsize=24)
-    plt.savefig(f"UMAP_projection.png")
+
+    colors = ["red", "blue", "green", "orange", "purple", "cyan", "pink", "yellow"]
+    for i in range(len(Z)):
+        c = colors[i % len(colors)]
+        fig.add_trace(
+            go.Scatter(
+                x=[archetypes[i, 0]],
+                y=[archetypes[i, 1]],
+                mode="markers+text",
+                marker=dict(
+                    color=c, size=18, symbol="star", line=dict(color="black", width=1)
+                ),
+                text=[f"A{i}"],
+                textposition="top center",
+                textfont=dict(size=14, color="black"),
+                name=f"Archetype {i}",
+                hoverinfo="name",
+            )
+        )
+
+    fig.update_layout(
+        title="UMAP projection of the archetypes (Interactive)",
+        title_font_size=24,
+        width=1000,
+        height=800,
+        template="plotly_white",
+        showlegend=True,
+        yaxis=dict(scaleanchor="x", scaleratio=1),
+    )
+
+    umap_html = "UMAP_projection_interactive.html"
+    fig.write_html(umap_html)
     print("UMAP visualisation done !")
+    fig.show()

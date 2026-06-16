@@ -211,7 +211,7 @@ if __name__ == "__main__":
         #     )
         #     print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
         #     cur_archetype += 1
-
-        visualisation_2d(a.X, Z)
+        print("Starting UMAP visualisation...")
+        visualisation_2d(a.X, Z, a.data_path)
 
         plt.close()
