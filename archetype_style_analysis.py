@@ -8,6 +8,7 @@ from preprocessing import *
 from glob import glob
 import gc
 from sklearn.decomposition import IncrementalPCA
+from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 from archetype_visualisation import *
 from tqdm import tqdm
@@ -69,6 +70,16 @@ class ArchetypeGenerator:
                         torch.cuda.empty_cache()
         self.data_path = np.array(valid_paths)
         n_samples = len(features_files)
+
+        scaler = StandardScaler()
+        for i in tqdm(range(0, n_samples, 512)):
+            batch = features_files[i : i + 512]
+            batch_data = [np.load(f) for f in batch]
+            scaler.partial_fit(batch_data)
+            del batch_data
+
+        self.scaler = scaler  # On le sauvegarde pour classer les futures images !
+
         n_components = min(512, n_samples - 1)
         ipca = IncrementalPCA(n_components)
 
@@ -100,7 +111,7 @@ class ArchetypeGenerator:
         self.A = A
         self.B = B
         self.Z = Z
-        return A, B, Z, ipca
+        return A, B, Z, ipca, scaler
 
     def classify_soft(self, x):
         img = imread_safe(x)
@@ -145,7 +156,7 @@ if __name__ == "__main__":
 
     feature_extractor = create_feature_extractor(model, return_nodes=return_nodes)
     cur_archetype = 0
-    for letter in ["a", "b", "c", "d"]:
+    for letter in ["a"]:
         """We use 4 archetypes per group of arts starting with the corresponding letter."""
         print(f"The part of the dataset with names starting with {letter}")
         paths = [
@@ -153,11 +164,12 @@ if __name__ == "__main__":
             for path in glob("ArtemisArt/**/*.jpg")
             if path.split("/")[1][0] == letter
         ]
+        paths = paths[:30]
         print(f"Il y a {len(paths)} images dans le dataset")
 
         n_archetype = 8
         a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
-        A, B, Z, pca_mod = a.find_archetypes()
+        A, B, Z, pca_mod, scaler = a.find_archetypes()
 
         # print(f"Voila la forme de A : {A}\n")
         # print(f"Voila la forme de B : {B}\n")
@@ -180,14 +192,15 @@ if __name__ == "__main__":
             synthetiser_archetype(
                 Z_archetype=Z[i],
                 pca_model=pca_mod,
+                scaler_model=scaler,
                 extractor=feature_extractor,
                 device=device,
                 n_iteration=500,
             )
-            for i in range(n_archetype)
+            for i in range(1)
         ]
 
-        for i in range(n_archetype):
+        for i in range(1):
             plt.imshow(images_synthetisees[i])
             plt.axis("off")
             # plt.title(f"L'essence de l'Archétype {i}")
