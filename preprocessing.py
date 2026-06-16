@@ -85,6 +85,50 @@ def find_most_uniform_crop(image: np.ndarray, crop_size: int = CROP_SIZE) -> np.
     return image[y:y + cs, x:x + cs]
 
 
+
+def find_less_uniform_crop(image: np.ndarray, crop_size: int = CROP_SIZE) -> np.ndarray:
+    """
+    Find the less uniform (highest-variance) square window of the image.
+
+    The local variance of every candidate top-left position is computed in O(1)
+    via integral images of the grayscale intensity (sum and sum-of-squares), so
+    the whole search is a couple of vectorised array ops regardless of image size.
+    The window with the smallest variance is the "flattest" region — typically a
+    sky, wall or uniformly painted background — and is returned as a BGR crop.
+
+    This runs on the *original* (un-padded) image so the reflected padding added
+    by pad_to_square() can never be selected as a (trivially) uniform region.
+
+    Args:
+        image    : NumPy array of shape (H, W, 3), BGR uint8.
+        crop_size: side length of the square window to extract.
+
+    Returns:
+        BGR uint8 crop of shape (crop_size, crop_size, 3). If the image is
+        smaller than crop_size in any dimension, the whole image is resized up.
+    """
+    h, w = image.shape[:2]
+    if h < crop_size or w < crop_size:
+        return cv2.resize(image, (crop_size, crop_size), interpolation=cv2.INTER_LINEAR)
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float64)
+    # Integral images: S[y, x] / S2[y, x] = sum / sum-of-squares of gray[:y, :x].
+    S, S2 = cv2.integral2(gray)  # both shape (h+1, w+1)
+
+    cs = crop_size
+    # Window sum over every top-left position via the inclusion-exclusion formula.
+    win_sum  = (S[cs:, cs:]  - S[:-cs, cs:]  - S[cs:, :-cs]  + S[:-cs, :-cs])
+    win_sum2 = (S2[cs:, cs:] - S2[:-cs, cs:] - S2[cs:, :-cs] + S2[:-cs, :-cs])
+
+    area = cs * cs
+    variance = win_sum2 / area - (win_sum / area) ** 2  # E[X^2] - E[X]^2
+    y, x = np.unravel_index(np.argmax(variance), variance.shape)
+
+    return image[y:y + cs, x:x + cs]
+
+
+
+
 def to_grayscale_3ch(image: np.ndarray) -> np.ndarray:
     """
     Convert a BGR image to grayscale and replicate the luminance across all 3

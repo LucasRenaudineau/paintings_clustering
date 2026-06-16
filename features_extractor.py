@@ -72,7 +72,8 @@ def extract_features(image, feature_model):
 
 
 def extract_crop_features(image, feature_model):
-    crop = find_most_uniform_crop(image)
+    # crop = find_most_uniform_crop(image)
+    crop = find_less_uniform_crop(image)
     crop_gray = to_grayscale_3ch(crop) # just comment this line to keep colors
     return _run_feature_model(preprocessing_image(crop_gray, pad=False), feature_model)
 

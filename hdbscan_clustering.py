@@ -132,4 +132,4 @@ def run_hdbscan(
 
 
 if __name__ == "__main__":
-    run_hdbscan(n=500, n_neighbors=10, min_cluster_size=5, max_cluster_size=50, min_samples=1)
+    run_hdbscan(n=100, n_neighbors=10, min_cluster_size=5, max_cluster_size=10, min_samples=1)
