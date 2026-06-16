@@ -39,6 +39,8 @@ For 500 iterations:
 
 In the end we obtain images like this:![archetype0](archetypes/archetype_0.png)
 
+Another visualisation we added was to project the archetypes and paintings on a 2D plane using Uniform Manifold Approximation and Projection (UMAP). Using this, we could see more easily which image was related to which archetype and what was its neighbors. An example of a UMAP mapping is: ![UMAP_projection](UMAP_projection.png) where the red dots represent the archetypes and the blue ones are the paintings. **We could hover the mouse on each dots to see which painting corresponds to which point. (A implémenter mais j'ai peur d'oublier de le noter là)**
+
 ### Archetype Clustering
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
@@ -65,7 +67,10 @@ The original paper has been implemented without the use of AI, no code generatio
 
 However we had RAM issues, AI helped us by improving the code by telling us to deleting variables in our loops after each iterations but it was not enough. Reading through our code we understood that issue lied in the PCA which forced all the data to be loaded all at once. We then asked it how could it be possible to compute the PCA without loading all the data all at once and it gave us several idea, one of them was the Incremental PCA. But the implementation of Incremental PCA has been done by hand.
 
-After generating the archetypes we thought it could be nice to visualize it but it did not seem necessary at the moment because we could just take the classified images and judge the clustering by looking through the images. So almost all the visualization code has been generated. However after having issues with contributing images in archetypes we felt that understanding the archetypes might be more important so we delved into the code. In the end it looked quite easy to implement and we modified it by hand so that it could fit our ambitions better (for example we added weights on layers **and implemented the scaling inversion for visualization)**
+After generating the archetypes we thought it could be nice to visualize it but it did not seem necessary at the moment because we could just take the classified images and judge the clustering by looking through the images. So almost all the visualization code has been generated. However after having issues with contributing images in archetypes we felt that understanding the archetypes might be more important so we delved into the code. In the end it looked quite easy to implement and we modified it by hand so that it could fit our ambitions better. For example we added without use of AI:
+
+- Visualisation of archetypes and images in a 2D plane using UMAP
+- Weights on layers for a more representative image generation **and implemented the scaling inversion for visualization**
 
 **AI was also used to help understanding the issues with redundancy in images contributing to archetypes (Passage en gras à enlever/modifier selon le paragraphe plus haut)**
 
