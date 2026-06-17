@@ -2,7 +2,7 @@
 
 ## Introduction
 
-ArtemisArt dataset is a dataset of around 1450 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
+ArtemisArt dataset is a dataset of around 14500 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
 The objective of the two methods we implemented is to cluster these unlabelled images by styles.
 
 ## Preprocessing
