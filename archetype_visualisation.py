@@ -4,9 +4,9 @@ import torch.optim as optim
 import torchvision.transforms.functional as TF
 import umap
 import numpy as np
-import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 
+# The following code is AI generated unless mentioned otherwise
 # ---------------------------------------------------------------------------
 # VGG19-BN tapped nodes and their channel counts:
 #
@@ -275,7 +275,20 @@ def synthetiser_archetype(
     return image_finale
 
 
-def visualisation_2d(X, Z, data_path):
+# This function is not AI generated
+def visualisation_2d(X, Z, data_path: list[str]):
+    """
+    This function is a way to visualize archetypes and images on a 2D plane using UMAP.
+
+    Parameters
+    ----------
+    X (ndarray) : The data vector matrix obtained from the Incremental PCA.
+
+    Z (ndarray) : The matrix of archetypes obtained from the ArchetypeGenerator.find_archetype() function.
+
+    data_path (list[str]) : The list of the images paths.
+    """
+    # UMAP embedding
     data = np.vstack((X, Z))
     reducer = umap.UMAP()
     embedding = reducer.fit_transform(data)
@@ -286,6 +299,7 @@ def visualisation_2d(X, Z, data_path):
 
     fig = go.Figure()
 
+    # Add the paintings
     fig.add_trace(
         go.Scatter(
             x=paintings[:, 0],
@@ -298,6 +312,7 @@ def visualisation_2d(X, Z, data_path):
         )
     )
 
+    # Add the archetypes
     colors = ["red", "blue", "green", "orange", "purple", "cyan", "pink", "yellow"]
     for i in range(len(Z)):
         c = colors[i % len(colors)]
