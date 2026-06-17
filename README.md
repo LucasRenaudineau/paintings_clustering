@@ -28,7 +28,7 @@ Files used for this method are:
 - archetype_style_analysis.py
 - main_archetype.ipynb
 
-## 2nd method : Activations method
+## 2nd method : Graph method
 
 Files used for this method are:
 
