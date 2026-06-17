@@ -53,7 +53,54 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 ## Classification via Feature Extraction
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try  to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images. 
+
+In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. 
+
+### Understanding our dataset
+Starting with a dataset, we must define how we want to use it. ResNet uses inputs of size 224x224. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
+- How can we input images larger than the size of ResNet's input and still use all the information of the image?
+- How can we use images that are not necessarily square? 
+
+We will not really answer the first question for now ; to start, we decided to reduce the size of images to fit ResNet's input. Thus, we lose information, but we can still look at the global composition. For what is to have a square, knowing that the largest dimension is 1800, we pad the image on the lowest to get a 1800x1800 image before downsampling it to 224x224. The goal is to avoid introducing artificial border artefacts that could be falsely used by ResNet on the border. To this end, the padding reflects the image (therefore adding no high frequencies).
+
+
+[IMAGE D'IMAGE MIROIRÉE CARRÉE vs normal]
+
+
+One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
+
+
+### Comparison of layers based on Cosine Similarity one by one
+
+We can know start our algorithm. By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
+
+Therefore, we must define :
+- Which sources of information should be considered? Especially how should they be weighted?
+- Which metric should be used?
+
+For the layers, we decided to keep the first 5 layers
+
+
+
+Wich layers ?
+weights of layers
+Cosine similarity
+
+### KNN And HDBscan
+To scale => need KNN
+Still issue with RAM if n_neighbor high
+
+### The idea of a Crop
+We ADD a crop information (+5 layers)
+First : uniform crop + expliquer algo (mytho sur premier crop parce que Lucas a bluffé)
+After reflection : less uniform ?
+=> comparaisons
+
+### Résultats
+
+
+
 
 ****
 
@@ -76,3 +123,10 @@ After generating the archetypes we thought it could be nice to visualize it but 
 ### Concerning Feature Extraction Classification
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+
+
+
+
+
+## Sources
