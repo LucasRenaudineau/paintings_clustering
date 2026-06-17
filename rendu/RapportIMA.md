@@ -1,26 +1,40 @@
-# IMA Report
+# Paintings Clustering Report
 
 ## Introduction
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-****
+ArtemisArt dataset is a dataset of around 1450 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
+The objective of the two methods we implemented is to cluster these unlabelled images by styles.
 
 ## Preprocessing
-Starting with a dataset, we must define how we want to use it. Assume we have input sizes of size YxY. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
-- How can we input images larger than the size of ResNet's input?
-- How can we use images that are not necessarily square? 
 
-We decided to reduce the size of images to fit ResNet's input. Thus, we lose information, but we can still look at the global composition. And later we can crop a part of the image if needed to get local informations. For what is to have a square, knowing that the largest dimension is 1800, we pad the image on the lowest to get a 1800x1800 image before downsampling it to YxY. The goal is to avoid introducing artificial border artefacts that could be falsely used by ResNet on the border. To this end, the padding reflects the image (therefore adding no high frequencies).
+Both methods use the same preprocessing for images.
+
+We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
+- How can we input images larger than the size of ResNet/VGG-19's input?
+- How can we use images that are not necessarily squares? 
+
+First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800*1800. In the following example, it was mirrored down.
 
 [normal image](images/afro_1.jpg)
 [mirrored image](images/afro_1_mirrored.jpg)
 
+A small detail: we had to remove less than 100 images because they didn't have a maximum dimension of 1800 pixels.
+Then, this 1800*1800 mirrored image is downsampled and then fed into the neural network.
 
-One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
+### Crop preprocessing
 
+To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
 
+At first, we used naive scanning on images to find such a crop. This limited our research because it was very long. It was optimized through this algorithm:
 
+- create array S and S2 of the dimensions of the image
+- for increasing i and increasing j:
+    S[i][j]=sum of image[:i,:j]
+    S2[i][j]=sum of image[:i,:j]**2
+- variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
+    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
+
+This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
 ## Archetypal Classification
 
@@ -72,8 +86,6 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try  to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images. 
 
 In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
-
-
 
 
 ### Distance function
