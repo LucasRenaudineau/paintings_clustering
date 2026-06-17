@@ -88,7 +88,17 @@ With that, we have everything ready for the classification of paintings.
 
 ### Results
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+We applied this algorithm with `n_archetypes=256`. Here are some of the archetypes (transformed into an image) :
+
+%insert images
+
+Here is a map showing the archetypes in the UMAP projection (the gray dots are the images from the dataset) :
+![](umap_projection_archetypes.png)
+
+The clustering of archetypes gave 25 clusters + noise. Here are some examples of clusters, we have obtained some good results.
+%insert images
+
+Now here are some examples of archetypes and their biggest contributor.
 
 ---
 
@@ -187,10 +197,10 @@ At first, we used naive scanning on images to find such a crop. This limited our
 
 - create array S and S2 of the dimensions of the image
 - for increasing i and increasing j:
-    S[i][j]=sum of image[:i,:j]
-    S2[i][j]=sum of image[:i,:j]\*\*2
+  S[i][j]=sum of image[:i,:j]
+  S2[i][j]=sum of image[:i,:j]\*\*2
 - variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
-    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]\*\*2-S[i1,j1]\*\*2+S[i1,j0]\*\*2+S[i0,j1]\*\*2
+  S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]\*\*2-S[i1,j1]\*\*2+S[i1,j0]\*\*2+S[i0,j1]\*\*2
 
 This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
@@ -283,6 +293,6 @@ Finally, one unfortunate event happend when a member of the team broke down rega
 https://arxiv.org/pdf/2407.08623
 https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/
 https://www.wikiart.org/fr
-Castellano, G., and Vessio, G., Deep learning approaches to pattern extraction and recognition in paintings and drawings: An overview, Neural Computing and Applications, Volume 33, pages 12263–12282, (2021) 
+Castellano, G., and Vessio, G., Deep learning approaches to pattern extraction and recognition in paintings and drawings: An overview, Neural Computing and Applications, Volume 33, pages 12263–12282, (2021)
 Wynen, D., Schmid, C., & Mairal, J. (2018). Unsupervised learning of artistic styles with archetypal style analysis. Advances in Neural Information Processing Systems, 31
 https://fr.wikipedia.org/wiki/Fleury_Joseph_Cr%C3%A9pin
