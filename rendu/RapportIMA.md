@@ -179,16 +179,16 @@ Regarding the weights of the distance, when far layers where given too much weig
 
 ### Crop preprocessing
 
-To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
+To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
 
 At first, we used naive scanning on images to find such a crop. This limited our research because it was very long. It was optimized through this algorithm:
 
 - create array S and S2 of the dimensions of the image
 - for increasing i and increasing j:
-  S[i][j]=sum of image[:i,:j]
-  S2[i][j]=sum of image[:i,:j]\*\*2
+    S[i][j]=sum of image[:i,:j]
+    S2[i][j]=sum of image[:i,:j]\*\*2
 - variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
-  S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
+    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]\*\*2-S[i1,j1]\*\*2+S[i1,j0]\*\*2+S[i0,j1]\*\*2
 
 This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
@@ -203,7 +203,7 @@ It had too many classes: 198. But the result was very promising. Note that we go
 
 With a bit more of tweeking the hyperparameters, we have our final result with 12 classes. For information, around 11000 of our images were originally classed as outliers by hdbscan and were put back by our reassignation function.
 
-This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
+This result satisfies the objectives of the project. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see what different styles it merged together. With more time, we could also have made a PCA for the center of all those clusters, to see how linked they are together.
 
 #### Some analysis on the 12 classes result
 
@@ -245,7 +245,8 @@ The other style is a religious style highly influenced by the 14th-15th century:
 
 Class 3 is acryllic modern painting.
 Class 9 has an interesting artifact: it detected paintings that have a clear boundary (mainly when the outboundary of the painting is an ellipse).
-We could spend hours trying to guess how images ended up together. Moreover, it is hard to tell, when 2 different styles merged together, if there is a real style link, or if it is just an outlier that ended up in the wrong cathegory and brought all its neighbors from the noise class...
+
+We could spend hours trying to guess how images ended up together. Moreover, it is hard to tell, when 2 different styles merged together, if there is a real style link, or if it is just an outlier that ended up in the wrong cathegory and brought all of its neighbors from the noise class...
 
 ## AI Use
 
@@ -271,9 +272,9 @@ Like in the archetypal classification, we tried to avoid the use of AI as much a
 
 AI was used mainly for information purposes, debugging or some occasional repetitive tasks. For instance, when we added 5 layers to take in account the local crop, updating the dimensions in \_LAYER_SPANS with AI save us some time, because it's very easy to do but cumbersome. Or to know the corresponding names of ResNet's layers.
 
-AI gave us interesting feedbacks for the optimisation algorithm of the crop (we could have used internet too ; AI was simply faster). And a proposition to linearise the activations in the cosine similarity function.
+AI gave us interesting feedbacks for the optimisation algorithm of the crop. And a proposition to linearise the activations in the cosine similarity function.
 
-Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the trash. He search on the web and saw that many peoples were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well, so he decided to keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
+Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the noise class for the 100th time... He searched on the web and saw that many people were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he entirely generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well (not at first, but with decreasing min_cluster it revealed useful), so he decided to eventually keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
 
 ## Sources
 
