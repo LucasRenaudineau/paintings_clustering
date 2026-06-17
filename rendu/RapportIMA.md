@@ -93,6 +93,27 @@ We had to understand the structure of the layers of ResNet50, which are describe
 The set of features we have is: 10 activations layers (5 for the full_image_mirrored_downsampled and 5 for the gray_crop).
 
 The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1, which is basically doing <A|B>/(||A||.||B||)
+We can already test our distance function to see if it is detecting similar images with low distance and non similar images with high distance.
+Here is the reference image:
+
+[reference_image](image/afro_1.jpg)
+
+Distances to the reference image:
+
+10e-6 (almost 0):
+[reference_image](image/afro_1.jpg)
+
+0.37
+[afro_3](image/afro_3.jpg)
+
+0.34
+[amiet_2](image/amiet_2.jpg)
+
+0.82
+[alechinsky_8](image/alechinsky_8.jpg)
+
+0.72
+[allori-a_7](image/allori-a_7.jpg)
 
 As expected, this is very slow and most importantly storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
 
@@ -128,8 +149,6 @@ To have less classes, we highly increased k_neighbors and increased a little min
 
 Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the sky presence influencing the cluster's composition). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
 
-
-
 ### Crop preprocessing
 
 To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
@@ -147,10 +166,18 @@ This gave too much importance to presence of a color in a painting, so we change
 
 ### Results
 
+After a lot of manual tuning for hyperparameters, here is the first very convincing result we got:
+
+[link to a zip file with the classification of images in 198 classes](https://share.rezel.net/s/lyVHlx9N)
+It had too many classes: 198. But the result was very promising. Note that we got something very interesting. We aimed at detecting style and this classification was almost too precise. It is good at detecting the same painter. For instance, class0 has 16 images, 14 being from the same painter (vasarely).
+
+[link to a zip file with the classification of images in 12 classes]()
+
+With a bit more of tweeking the hyperparameters, we have our final result with 12 classes. For information, around 11000 of our images were originally classed as outliers by hdbscan and were put back by our reassignation function.
+
+This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
 
 
-
-****
 
 ## AI Use
 
