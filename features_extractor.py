@@ -13,7 +13,7 @@ MODEL_PATH = "./models/resnet50.pth"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Used ai to know the corresponding names for pytorch
-FEATURE_LAYER_NAMES = {
+FEATURE_LAYER_NAMES = { # explaining of these names is done in function extract_features in this file
     "relu": "conv1_relu",
     "layer1.2": "conv2_block3_out",
     "layer2.3": "conv3_block4_out",

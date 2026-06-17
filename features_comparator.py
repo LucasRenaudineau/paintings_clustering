@@ -29,18 +29,18 @@ def cosineSimilarity(activation1, activation2):
     
     
 
-# One weight per activation, in order. Indices 0-4 are the full COLOUR image;
-# indices 5-9 are the most uniform GRAYSCALE crop (texture, colour-invariant).
-#   0  conv1_relu        full image   (colour)
-#   1  conv2_block3_out  full image   (colour)
-#   2  conv3_block4_out  full image   (colour)
-#   3  conv4_block6_out  full image   (colour)
-#   4  conv5_block3_out  full image   (colour)
-#   5  conv1_relu        uniform crop (grayscale texture)
-#   6  conv2_block3_out  uniform crop (grayscale texture)
-#   7  conv3_block4_out  uniform crop (grayscale texture)
-#   8  conv4_block6_out  uniform crop (grayscale texture)
-#   9  conv5_block3_out  uniform crop (grayscale texture)
+# One weight per activation, in order. Indices 0-4 are the full image (downsampled);
+# indices 5-9 are the most uniform grayscale crop.
+# 0 conv1_relu       full image   (colour)
+# 1 conv2_block3_out full image   (colour)
+# 2 conv3_block4_out full image   (colour)
+# 3 conv4_block6_out full image   (colour)
+# 4 conv5_block3_out full image   (colour)
+# 5 conv1_relu       uniform crop (grayscale texture)
+# 6 conv2_block3_out uniform crop (grayscale texture)
+# 7 conv3_block4_out uniform crop (grayscale texture)
+# 8 conv4_block6_out uniform crop (grayscale texture)
+# 9 conv5_block3_out uniform crop (grayscale texture)
 LAYER_WEIGHTS = (1.0, 0.1, 0.1, 1.0, 1.0, 1.0, 0.1, 0.1, 1.0, 1.0)
 
 
@@ -53,8 +53,8 @@ def distance(features1, features2):
 
     Args:
         2 lists of 10 activation NumPy arrays (see extract_all_features):
-            0..4  full colour image -> conv1_relu .. conv5_block3_out
-            5..9  uniform grayscale crop -> same layers (texture)
+            0..4 full colour image -> conv1_relu .. conv5_block3_out
+            5..9 uniform grayscale crop -> same layers (texture)
 
     Returns:
         float : value of the distance measure between features1 and features2
