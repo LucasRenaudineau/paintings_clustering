@@ -2,46 +2,65 @@
 
 ## Introduction
 
+<<<<<<< Updated upstream
 ArtemisArt dataset is a dataset of around 1450 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
 The objective of the two methods we implemented is to cluster these unlabelled images by styles.
 
 ## Preprocessing
 
+=======
+Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+
+---
+
+## Preprocessing
+
+Starting with a dataset, we must define how we want to use it. Assume we have input sizes of size YxY. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
+
+- How can we input images larger than the size of ResNet's input?
+- How can we use images that are not necessarily square?
+
 Both methods use the same preprocessing for images.
 
-We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
-- How can we input images larger than the size of ResNet/VGG-19's input?
-- How can we use images that are not necessarily squares? 
+<<<<<<< Updated upstream
+We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256\*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
 
-First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800*1800. In the following example, it was mirrored down.
+- How can we input images larger than the size of ResNet/VGG-19's input?
+- How can we use images that are not necessarily squares?
+
+<<<<<<< Updated upstream
+First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800\*1800. In the following example, it was mirrored down.
 
 [normal image](images/afro_1.jpg)
 [mirrored image](images/afro_1_mirrored.jpg)
 
 A small detail: we had to remove less than 100 images because they didn't have a maximum dimension of 1800 pixels.
-Then, this 1800*1800 mirrored image is downsampled and then fed into the neural network.
-
+Then, this 1800\*1800 mirrored image is downsampled and then fed into the neural network.
 
 ## Archetypal clustering method
 
-In this section we will discuss our implementation using archetypal classification. Our method implements the paper *Unsupervised Learning of Artistic Styles with Archetypal Style Analysis* from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
+One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
+
+## Archetypal Classification
+
+In this section we will discuss our implementation using archetypal classification. Our method implements the paper _Unsupervised Learning of Artistic Styles with Archetypal Style Analysis_ from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
 
 ### Transformation of the data
 
 In order to find an image's style, we will encode it into a latent space. The fisrt step is to transform the images of the dataset to be in an appropriate format. Following the above preprocessing, we reshape the images to a size of 224x224 to be used by the VGG-19 neural network. In order to get information from our images we use the VGG-19 network from which we will extract the features. For an image $I$, we extract from the five convolutional layers of VGG-19 the feature maps $F_1,..., F_5$ obtained from $I$. From each $F_i$ which are of shape (channel, height, width), we take the mean $\mu_i$ and the covariance matrix $C_i$ over each channel on the whole image. That means that $\mu_i[c_k]$ and $C_i[c_k]$ are the mean and covariance matrix respectfully for channel $c_k$ of feature map $F_i$. We then concatenate the values. We obtain a very large vector which we normalize by $p(p+1)$, where $p$ is the number of channels, because it helps with balance in the dataset according to the paper. Once every vector has been computed for each image, we have vectors of length around 100,000.
 
-To keep only the useful information we make a dimension reduction through PCA to keep only 4096 dimensions in our vectors. The main issue we went through with the PCA is the memory shortage caused by the overwhelming size of the matrix composed of the data vectors. At this point we were trying to apply our method on 7000 images which led to a 7000x100,000 matrix and it could not be loaded all at once for the PCA. To solve this issue, we implemented an Incremental PCA using the *scikit* library which has a constant memory complexity. We stored each data vector on the disk and loaded them by batches of size 200 to be applied one by one into the Incremental PCA. Due to mathematical issues, we only kept 512 components after the Incremental PCA which is still sufficient to explain most of the data variability.
+To keep only the useful information we make a dimension reduction through PCA to keep only 4096 dimensions in our vectors. The main issue we went through with the PCA is the memory shortage caused by the overwhelming size of the matrix composed of the data vectors. At this point we were trying to apply our method on 7000 images which led to a 7000x100,000 matrix and it could not be loaded all at once for the PCA. To solve this issue, we implemented an Incremental PCA using the _scikit_ library which has a constant memory complexity. We stored each data vector on the disk and loaded them by batches of size 200 to be applied one by one into the Incremental PCA. Due to mathematical issues, we only kept 512 components after the Incremental PCA which is still sufficient to explain most of the data variability.
 
 ### THE FOLLOWING PART IS TEMPORARY UNTIL VERIFICATION THROUGH TESTS
 
-**However, the regularization by the number of channel on each layer induced an imbalance on the layers. The last layers having more channels were more reduced than the first ones. The PCA would then decide that the first layers were more relevant for the style and would mostly keep very contrasted images. Due to this, every archetypes were mostly generated by the same 20 images. To fix this we added a StandardScaler from the *scikit* library before the IncrementalPCA. The results showed great improvement on the diversity of the images contributing predominantly to archetype generation.**
+**However, the regularization by the number of channel on each layer induced an imbalance on the layers. The last layers having more channels were more reduced than the first ones. The PCA would then decide that the first layers were more relevant for the style and would mostly keep very contrasted images. Due to this, every archetypes were mostly generated by the same 20 images. To fix this we added a StandardScaler from the _scikit_ library before the IncrementalPCA. The results showed great improvement on the diversity of the images contributing predominantly to archetype generation.**
 
 ### Archetype Generation
 
 The next step is to find the archetypes from the latent space from the previously transformed data. The idea is to find latent variables $Z_i$ such that each vector data $X_i$ can be written as a convex combination of the latent vectors $(\bold{X} = \bold{Z}\alpha)$ while also having each $Z_i$ written as a convex combination of the data vectors $(\bold{Z}=\bold{X}\beta)$. We get the following optimization problem:
-$$ \underset{\underset{\beta_1,...,\beta_k}{\alpha_1,...,\alpha_n}}{\min}\frac{1}{n} \sum_{i=1}^n ||x_i-\bold{Z}\alpha_i||^2 \text{ s.t } \bold{z}_j = \bold{X}\beta_j \text{ for all }j=1,...,k$$
+$$ \underset{\underset{\beta*1,...,\beta_k}{\alpha_1,...,\alpha_n}}{\min}\frac{1}{n} \sum*{i=1}^n ||x_i-\bold{Z}\alpha_i||^2 \text{ s.t } \bold{z}\_j = \bold{X}\beta_j \text{ for all }j=1,...,k$$
 
-We tried to implement another paper for solving this optimization problem but failed to because it makes use of three complicated and imbricated algorithm each attempting to solve an easier optimization problem but do not provide a way to compute the very last one which is still very challenging. In the end we used the *archetype* library from python which is structured like the *scikit* library. It could fit on the data provided and transform to give the latent variables $Z_i$ and the convex combination coefficient $\alpha$ and $\beta$. The transform function could also compute the coefficient $\alpha_{n+1}$ from the known latent variables in case we want to test on an image that wasn't in the training data set which would provide very useful for time management on the testing phase.
+We tried to implement another paper for solving this optimization problem but failed to because it makes use of three complicated and imbricated algorithm each attempting to solve an easier optimization problem but do not provide a way to compute the very last one which is still very challenging. In the end we used the _archetype_ library from python which is structured like the _scikit_ library. It could fit on the data provided and transform to give the latent variables $Z_i$ and the convex combination coefficient $\alpha$ and $\beta$. The transform function could also compute the coefficient $\alpha_{n+1}$ from the known latent variables in case we want to test on an image that wasn't in the training data set which would provide very useful for time management on the testing phase.
 
 Using the $\beta$ and $\alpha$ vectors, we could determine which image led to the creation of each latent variable and how each latent variable would provide data for each image. We only had to verify how latent variable were related to a style. To do this we try to generate an image $I^*$ such that its data vector is the closest to the latent variable aimed at. The Incremental PCA implementation allows for an inversion of the PCA which allows us to partially create an "original" data vector for the latent variables. We can extract from this vector the informations corresponding to each "original" feature map. We will design those as $F_i^*$ with parameter $\mu_i^*$ and $C_i^*$ as its mean and covariance matrix respectively. Now we can define the following loss function: $$\mathcal{L}(I, I^*) = \sum_{i=0}^5\gamma_i\left(||\mu_i - \mu_i^*||^2 + ||C_i - C_i^*||^2\right) + \lambda TV(I^*)$$
 Where $TV$ designs the Total Variation function, $\gamma_i$ is a weight coefficient for the $i$-th layer and $\lambda$ is the weight coefficient for the Total Variation regularization term. The generation is done through backpropagation with the Adam optimizer. The algorithm is as follows:
@@ -65,11 +84,11 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
 
-****
+---
 
 ## Graph clustering method
 
-In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try  to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images. 
+In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images.
 
 In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
 
@@ -77,13 +96,15 @@ In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, e
 
 preprocessing -> (image_mirrored_downsampled, gray_crop) -> feature_extraction -> (activations of image_mirrored_downsampled and gray_crop inside ResNet50) -> knn using distance_function -> (approximate graph with for each node the distance to its supposed k_neighbor closest matches) -> hdbscan -> (clustered images, outliers) -> reassigning -> (all images clustered)
 
-
 ### Features extraction
+
+### Distance function
 
 By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
 
 Therefore, we must define :
-- Which sources of information should be considered? And how should they be weighted?
+
+- Which sources of information should be considered? Especially how should they be weighted?
 - Which metric should be used?
 
 We had to understand the structure of the layers of ResNet50, which are described [here](https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/). We then keep the activations of each convolutional layer (block just means which "step" of the layer we use, and we decided to use the last one for each layer, which is the most "refined" one, but we did not test with any other values).
@@ -122,12 +143,25 @@ If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
 
 This and the crop scanning optimization allowed us to go from 500 images to 14000 images.
 
+Wich layers ?
+weights of layers
+Cosine similarity SUR LES MOYENNES
+
+### The idea of a Crop
+
+We ADD a crop information (+5 layers)
+First : uniform crop + expliquer algo optimisé
+After reflection : less uniform ?
+=> comparaisons
+
 ### KNN
 
 Now that we have a distance function to measure how similar two images are, we will build a graph of distances.
 
 The naive idea is to build a complete graph where each node is an image, and each link is the distance between two images.
-However, we have more than 14 thousand images in the dataset and this algorithm is in O(n**2) with n images. With the distance function being quite costly, this is not a solution.
+
+However, we have more than 14 thousand images in the dataset and this algorithm is in O(n\*\*2) with n images. With the distance funciton being quite costly, this is not a solution.
+
 Thus, we use a knn method which builds an approximate graph of the idea we had. Instead of computing all distances, each node keeps only k neighbors, and we expect at the end of the knn algorithm those k neighbors to be the closest nodes from the distance function perspective.
 
 KNN's hyperparameter in k_neighbor
@@ -157,10 +191,10 @@ At first, we used naive scanning on images to find such a crop. This limited our
 
 - create array S and S2 of the dimensions of the image
 - for increasing i and increasing j:
-    S[i][j]=sum of image[:i,:j]
-    S2[i][j]=sum of image[:i,:j]**2
+  S[i][j]=sum of image[:i,:j]
+  S2[i][j]=sum of image[:i,:j]\*\*2
 - variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
-    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
+  S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
 
 This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
@@ -177,7 +211,9 @@ With a bit more of tweeking the hyperparameters, we have our final result with 1
 
 This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
 
+=======
 
+### Résultats
 
 ## AI Use
 
@@ -189,19 +225,16 @@ The original paper has been implemented without the use of AI, no code generatio
 
 However we had RAM issues, AI helped us by improving the code by telling us to deleting variables in our loops after each iterations but it was not enough. Reading through our code we understood that issue lied in the PCA which forced all the data to be loaded all at once. We then asked it how could it be possible to compute the PCA without loading all the data all at once and it gave us several idea, one of them was the Incremental PCA. But the implementation of Incremental PCA has been done by hand.
 
-After generating the archetypes we thought it could be nice to visualize it but it did not seem necessary at the moment because we could just take the classified images and judge the clustering by looking through the images. So almost all the visualization code has been generated. However after having issues with contributing images in archetypes we felt that understanding the archetypes might be more important so we delved into the code. In the end it looked quite easy to implement and we modified it by hand so that it could fit our ambitions better. For example, the visualisation of archetypes and images in a 2D plane using UMAP was done by hand. We only asked AI for help to make it interactive because nobody knew how to use plotly and we were very short on time but it barely changed the code as it mostly replaced the *plt.scatter()* use by a *fig.add_trace()* with the same previous parameters. We also added weights on layers for a more representative image generation **and implemented the scaling inversion for visualization**.
+After generating the archetypes we thought it could be nice to visualize it but it did not seem necessary at the moment because we could just take the classified images and judge the clustering by looking through the images. So almost all the visualization code has been generated. However after having issues with contributing images in archetypes we felt that understanding the archetypes might be more important so we delved into the code. In the end it looked quite easy to implement and we modified it by hand so that it could fit our ambitions better. For example, the visualisation of archetypes and images in a 2D plane using UMAP was done by hand. We only asked AI for help to make it interactive because nobody knew how to use plotly and we were very short on time but it barely changed the code as it mostly replaced the _plt.scatter()_ use by a _fig.add_trace()_ with the same previous parameters. We also added weights on layers for a more representative image generation **and implemented the scaling inversion for visualization**.
 
 **AI was also used to help understanding the issues with redundancy in images contributing to archetypes but the implementations were done by hand. (Passage en gras à enlever/modifier selon le paragraphe plus haut)**
 
-****
+AI has been used to help us write the report.
+
+---
 
 ### Concerning Feature Extraction Classification
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
-
-
-
-
 
 ## Sources
