@@ -144,15 +144,6 @@ class ArchetypeGenerator:
         self.data_path = np.array(valid_paths)
         n_samples = len(features_files)
         batch_size = 256
-        # We normalize the data to avoid redundancy in archetype contributors
-        scaler = StandardScaler()
-        for i in tqdm(range(0, n_samples, batch_size)):
-            batch = features_files[i : i + batch_size]
-            batch_data = [np.load(f) for f in batch]
-            scaler.partial_fit(batch_data)
-            del batch_data
-
-        self.scaler = scaler
 
         n_components = min(batch_size, n_samples - 1)
         ipca = IncrementalPCA(n_components, whiten=True)
@@ -164,9 +155,10 @@ class ArchetypeGenerator:
             if len(batch) < n_components:
                 continue
             batch_data = [np.load(f) for f in batch]
-            batch_data_scaled = scaler.transform(batch_data)
+            batch_data_scaled = np.array(batch_data, dtype=np.float32)
             ipca.partial_fit(batch_data_scaled)
             del batch_data, batch_data_scaled
+            gc.collect()
 
         # Transforming the data via Incremental PCA
         print("Starting transformation of the data via IncrementalPCA...")
@@ -174,10 +166,12 @@ class ArchetypeGenerator:
         for i in tqdm(range(0, n_samples, batch_size)):
             batch = features_files[i : i + batch_size]
             batch_data = [np.load(f) for f in batch]
-            batch_data_scaled = scaler.transform(batch_data).astype(np.float32)
-            X_batch_transformed = ipca.transform(batch_data_scaled)
+            batch_data_raw = np.array(batch_data, dtype=np.float32)
+            X_batch_transformed = ipca.transform(batch_data_raw)
             X_transformed_list.append(X_batch_transformed)
-            del batch_data, batch_data_scaled
+            del batch_data, batch_data_raw
+            gc.collect()
+
         X = np.vstack(X_transformed_list)
         print(f"shape of X : {X.shape}")
         self.X = X
@@ -191,7 +185,7 @@ class ArchetypeGenerator:
         self.A = A
         self.B = B
         self.Z = Z
-        return A, B, Z, ipca, scaler
+        return A, B, Z, ipca
 
     def classify_soft(self, x: str):
         """
@@ -210,9 +204,8 @@ class ArchetypeGenerator:
         m = max(h, w)
         if m != 1800:
             raise ValueError("Longest dimension is not of size 1800")
-        x_raw = self.transform(img).reshape(1, -1)
-        x_raw_scaled = self.scaler.transform(x_raw)
-        x_raw_reduced = self.ipca.transform(x_raw_scaled)
+        x_raw = self.transform(img).reshape(1, -1).astype(np.float32)
+        x_raw_reduced = self.ipca.transform(x_raw)
         return self.archetype.transform(x_raw_reduced)
 
     def classify_hard(self, x: str):

@@ -207,7 +207,10 @@ def synthetiser_archetype(
     # --- 1. Decode archetype from PCA space to raw descriptor space -----------
     Z_unpca = pca_model.inverse_transform(Z_archetype.reshape(1, -1))
 
-    Z_full_numpy = scaler_model.inverse_transform(Z_unpca)[0]
+    if scaler_model is not None:
+        Z_full_numpy = scaler_model.inverse_transform(Z_unpca)[0]
+    else:
+        Z_full_numpy = Z_unpca[0]
 
     # --- 2. Split into per-layer (mu, sigma) targets -------------------------
     cibles_couches = unpack_Z_full(Z_full_numpy, p_list, device)
