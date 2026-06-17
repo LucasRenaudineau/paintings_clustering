@@ -43,7 +43,7 @@ def pad_to_square(image: np.ndarray) -> np.ndarray:
 
 
 # Most-uniform region crop
-
+# Used AI for the algorithm
 def find_most_uniform_crop(image: np.ndarray, crop_size: int = CROP_SIZE) -> np.ndarray:
     """
     Find the most uniform (lowest-variance) square window of the image.

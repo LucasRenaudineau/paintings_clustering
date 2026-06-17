@@ -8,7 +8,7 @@ def cosineSimilarity(activation1, activation2):
     """ 
     Implement the cosine similarity norm.
     Source used : https://arxiv.org/pdf/2407.08623
-             IA used to give the idea to linearise the numpy arrays
+             AI used to give the idea to linearise the numpy arrays
     
     Args:
         2 numpy of size (1, H, W, C)
