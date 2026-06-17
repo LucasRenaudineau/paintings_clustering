@@ -143,24 +143,24 @@ class ArchetypeGenerator:
                         torch.cuda.empty_cache()
         self.data_path = np.array(valid_paths)
         n_samples = len(features_files)
-
+        batch_size = 256
         # We normalize the data to avoid redundancy in archetype contributors
         scaler = StandardScaler()
-        for i in tqdm(range(0, n_samples, 512)):
-            batch = features_files[i : i + 512]
+        for i in tqdm(range(0, n_samples, batch_size)):
+            batch = features_files[i : i + batch_size]
             batch_data = [np.load(f) for f in batch]
             scaler.partial_fit(batch_data)
             del batch_data
 
         self.scaler = scaler
 
-        n_components = min(512, n_samples - 1)
-        ipca = IncrementalPCA(n_components)
+        n_components = min(batch_size, n_samples - 1)
+        ipca = IncrementalPCA(n_components, whiten=True)
 
         # Fitting the Incremental PCA
         print("Starting IncrementalPCA fitting...")
-        for i in tqdm(range(0, n_samples, 512)):
-            batch = features_files[i : i + 512]
+        for i in tqdm(range(0, n_samples, batch_size)):
+            batch = features_files[i : i + batch_size]
             if len(batch) < n_components:
                 continue
             batch_data = [np.load(f) for f in batch]
@@ -171,10 +171,10 @@ class ArchetypeGenerator:
         # Transforming the data via Incremental PCA
         print("Starting transformation of the data via IncrementalPCA...")
         X_transformed_list = []
-        for i in tqdm(range(0, n_samples, 512)):
-            batch = features_files[i : i + 512]
+        for i in tqdm(range(0, n_samples, batch_size)):
+            batch = features_files[i : i + batch_size]
             batch_data = [np.load(f) for f in batch]
-            batch_data_scaled = scaler.transform(batch_data)
+            batch_data_scaled = scaler.transform(batch_data).astype(np.float32)
             X_batch_transformed = ipca.transform(batch_data_scaled)
             X_transformed_list.append(X_batch_transformed)
             del batch_data, batch_data_scaled
