@@ -24,11 +24,6 @@ First, we mirror the images as many times as possible to increase the dimension 
 [normal image](images/afro_1.jpg)
 [mirrored image](images/afro_1_mirrored.jpg)
 
-A small detail: we had to remove less than 100 images because they didn't have a maximum dimension of 1800 pixels.
-Then, this 1800\*1800 mirrored image is downsampled and then fed into the neural network.
-
-## Archetypal clustering method
-
 One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
 
 ## Archetypal Classification
@@ -129,7 +124,7 @@ As expected, this is very slow and most importantly storing the full activations
 A GAP vector is simply averaging on all dimensions except the last one.
 If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
 
-This and the crop scanning optimization allowed us to go from 500 images to 14000 images.
+This and the crop scanning optimization we'll talk about later allowed us to go from 500 images to 14000 images.
 
 ### KNN
 
