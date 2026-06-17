@@ -88,8 +88,6 @@ preprocessing -> (image_mirrored_downsampled, gray_crop) -> feature_extraction -
 
 ### Features extraction
 
-### Distance function
-
 By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
 
 Therefore, we must define :
@@ -132,17 +130,6 @@ A GAP vector is simply averaging on all dimensions except the last one.
 If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
 
 This and the crop scanning optimization allowed us to go from 500 images to 14000 images.
-
-Wich layers ?
-weights of layers
-Cosine similarity SUR LES MOYENNES
-
-### The idea of a Crop
-
-We ADD a crop information (+5 layers)
-First : uniform crop + expliquer algo optimisé
-After reflection : less uniform ?
-=> comparaisons
 
 ### KNN
 
