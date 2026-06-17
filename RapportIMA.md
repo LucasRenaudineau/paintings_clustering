@@ -6,13 +6,29 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 ****
 
+## Preprocessing
+Starting with a dataset, we must define how we want to use it. Assume we have input sizes of size YxY. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
+- How can we input images larger than the size of ResNet's input?
+- How can we use images that are not necessarily square? 
+
+We decided to reduce the size of images to fit ResNet's input. Thus, we lose information, but we can still look at the global composition. And later we can crop a part of the image if needed to get local informations. For what is to have a square, knowing that the largest dimension is 1800, we pad the image on the lowest to get a 1800x1800 image before downsampling it to YxY. The goal is to avoid introducing artificial border artefacts that could be falsely used by ResNet on the border. To this end, the padding reflects the image (therefore adding no high frequencies).
+
+
+[IMAGE D'IMAGE MIROIRÉE CARRÉE vs normal]
+
+
+One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
+
+
+
+
 ## Archetypal Classification
 
 In this section we will discuss our implementation using archetypal classification. Our method implements the paper *Unsupervised Learning of Artistic Styles with Archetypal Style Analysis* from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
 
 ### Transformation of the data
 
-In order to find an image's style, we will encode it into a latent space. The fisrt step is to transform the images of the dataset to be in an appropriate format. In the dataset, most of the images have different shapes. We decided to have each image be of shape 1800x1800 as almost every image has its longest dimension of size 1800. The reshaping is done using padding on the shorter dimension where we extend the side by replicating the other side. If an image does not have a longer size of 1800 we dispose of it. Finally, we reshape it to a size of 224x224 to be used by the VGG-19 neural network. In order to get information from our images we use the VGG-19 network from which we will extract the features. For an image $I$, we extract from the five convolutional layers of VGG-19 the feature maps $F_1,..., F_5$ obtained from $I$. From each $F_i$ which are of shape (channel, height, width), we take the mean $\mu_i$ and the covariance matrix $C_i$ over each channel on the whole image. That means that $\mu_i[c_k]$ and $C_i[c_k]$ are the mean and covariance matrix respectfully for channel $c_k$ of feature map $F_i$. We then concatenate the values. We obtain a very large vector which we normalize by $p(p+1)$, where $p$ is the number of channels, because it helps with balance in the dataset according to the paper. Once every vector has been computed for each image, we have vectors of length around 100,000.
+In order to find an image's style, we will encode it into a latent space. The fisrt step is to transform the images of the dataset to be in an appropriate format. Following the above preprocessing, we reshape the images to a size of 224x224 to be used by the VGG-19 neural network. In order to get information from our images we use the VGG-19 network from which we will extract the features. For an image $I$, we extract from the five convolutional layers of VGG-19 the feature maps $F_1,..., F_5$ obtained from $I$. From each $F_i$ which are of shape (channel, height, width), we take the mean $\mu_i$ and the covariance matrix $C_i$ over each channel on the whole image. That means that $\mu_i[c_k]$ and $C_i[c_k]$ are the mean and covariance matrix respectfully for channel $c_k$ of feature map $F_i$. We then concatenate the values. We obtain a very large vector which we normalize by $p(p+1)$, where $p$ is the number of channels, because it helps with balance in the dataset according to the paper. Once every vector has been computed for each image, we have vectors of length around 100,000.
 
 To keep only the useful information we make a dimension reduction through PCA to keep only 4096 dimensions in our vectors. The main issue we went through with the PCA is the memory shortage caused by the overwhelming size of the matrix composed of the data vectors. At this point we were trying to apply our method on 7000 images which led to a 7000x100,000 matrix and it could not be loaded all at once for the PCA. To solve this issue, we implemented an Incremental PCA using the *scikit* library which has a constant memory complexity. We stored each data vector on the disk and loaded them by batches of size 200 to be applied one by one into the Incremental PCA. Due to mathematical issues, we only kept 512 components after the Incremental PCA which is still sufficient to explain most of the data variability.
 
@@ -55,23 +71,12 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try  to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images. 
 
-In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. 
-
-### Understanding our dataset
-Starting with a dataset, we must define how we want to use it. ResNet uses inputs of size 224x224. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
-- How can we input images larger than the size of ResNet's input and still use all the information of the image?
-- How can we use images that are not necessarily square? 
-
-We will not really answer the first question for now ; to start, we decided to reduce the size of images to fit ResNet's input. Thus, we lose information, but we can still look at the global composition. For what is to have a square, knowing that the largest dimension is 1800, we pad the image on the lowest to get a 1800x1800 image before downsampling it to 224x224. The goal is to avoid introducing artificial border artefacts that could be falsely used by ResNet on the border. To this end, the padding reflects the image (therefore adding no high frequencies).
+In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
 
 
-[IMAGE D'IMAGE MIROIRÉE CARRÉE vs normal]
 
 
-One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
-
-
-### Comparison of layers based on Cosine Similarity one by one
+### Distance function
 
 We can know start our algorithm. By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
 
@@ -85,7 +90,7 @@ For the layers, we decided to keep the first 5 layers
 
 Wich layers ?
 weights of layers
-Cosine similarity
+Cosine similarity SUR LES MOYENNES
 
 ### KNN And HDBscan
 To scale => need KNN
