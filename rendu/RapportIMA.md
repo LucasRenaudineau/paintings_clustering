@@ -62,9 +62,9 @@ For 500 iterations:
 - We compute the loss function $\mathcal{L}(I, I^*)$
 - Backpropagation and update of $I^*$
 
-In the end we obtain images like this:![archetype0](archetypes/archetype_0.png)
+In the end we obtain images like this:![archetype0](../archetypes/archetype_0.png)
 
-Another visualisation we added was to project the archetypes and paintings on a 2D plane using Uniform Manifold Approximation and Projection (UMAP). Using this, we could see more easily which image was related to which archetype and what was its neighbors. An example of a UMAP mapping is: ![UMAP_projection](UMAP_projection.png) where the colored stars represent the archetypes and the gray dots are the paintings. We could hover the mouse on each dots to see which painting corresponds to which point allowing for efficient comparison with the results obtained through the vectors $\alpha$ and $\beta$.
+Another visualisation we added was to project the archetypes and paintings on a 2D plane using Uniform Manifold Approximation and Projection (UMAP). Using this, we could see more easily which image was related to which archetype and what was its neighbors. An example of a UMAP mapping is: ![UMAP_projection](../UMAP_projection.png) where the colored stars represent the archetypes and the gray dots are the paintings. We could hover the mouse on each dots to see which painting corresponds to which point allowing for efficient comparison with the results obtained through the vectors $\alpha$ and $\beta$.
 
 ### Archetype Clustering
 
@@ -203,6 +203,8 @@ This result is satisfying. The number of clusters is a bit too small, it looks l
 
 ## AI Use
 
+Our original document is a markdown file and AI has been used to translate it into a LaTeX document. However, the content was untouched, only the format has been generated.
+
 ### Concerning Archetypal Classification
 
 Concerning the archetypal classification, we tried to avoid AI to generate our code as much as possible. But we did use it a bit to get informations or to do some debugging.
@@ -215,7 +217,6 @@ After generating the archetypes we thought it could be nice to visualize it but 
 
 **AI was also used to help understanding the issues with redundancy in images contributing to archetypes but the implementations were done by hand. (Passage en gras à enlever/modifier selon le paragraphe plus haut)**
 
-AI has been used to help us write the report.
 
 ---
 
