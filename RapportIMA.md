@@ -92,15 +92,40 @@ Wich layers ?
 weights of layers
 Cosine similarity SUR LES MOYENNES
 
-### KNN And HDBscan
-To scale => need KNN
-Still issue with RAM if n_neighbor high
 
 ### The idea of a Crop
 We ADD a crop information (+5 layers)
-First : uniform crop + expliquer algo (mytho sur premier crop parce que Lucas a bluffé)
+First : uniform crop + expliquer algo optimisé
 After reflection : less uniform ?
 => comparaisons
+
+### KNN
+
+Now that we have a distance function to measure how similar two images are, we will build a graph of distances.
+
+The naive idea is to build a complete graph where each node is an image, and each link is the distance between two images.
+However, we have more than 14 thousand images in the dataset and this algorithm is in O(n**2) with n images. With the distance funciton being quite costly, this is not a solution.
+Thus, we use a knn method which builds an approximate graph of the idea we had. Instead of computing all distances, each node keeps only k neighbors, and we expect at the end of the knn algorithm those k neighbors to be the closest nodes from the distance function perspective.
+
+KNN's hyperparameter in k_neighbor
+
+### HDBSCAN
+
+Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail much this method because we did not implement it as it was already implemented in the library hdbscan.
+
+Hdbscan hyperparameters are min_cluster, max_cluster
+
+Hdbscan also puts outliers in a class labeled as noise. After hdbscan's classification, we give each outlier the class of its closest classified neighbor.
+
+### TUNING HYPERPARAMETERS
+
+We had to tune the hyperparameters a little.
+When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 90% of the database as noisy.
+However, with both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
+To have less classes, we highly increased k_neighbors and increased a little min_cluster, until we could get a good amount of classes (between 10 and 50).
+
+Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the fact sky was present). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
+
 
 ### Résultats
 
