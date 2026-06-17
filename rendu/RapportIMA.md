@@ -21,6 +21,8 @@ First, we mirror the images as many times as possible to increase the dimension 
 
 One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
 
+Then, the 1800\*1800 image is downsampled to feed it into the neural network.
+
 ## Archetypal Classification
 
 In this section we will discuss our implementation using archetypal classification. Our method implements the paper _Unsupervised Learning of Artistic Styles with Archetypal Style Analysis_ from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
