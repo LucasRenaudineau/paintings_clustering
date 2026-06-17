@@ -75,7 +75,7 @@ Another visualisation we added was to project the archetypes and paintings on a 
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
 
-### Résultats
+### Results
 
 Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
 
@@ -87,29 +87,33 @@ In this section, we will implement another way to make clustering. The idea is t
 
 In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
 
+### Pipeline
+
+preprocessing -> (image_mirrored_downsampled, gray_crop) -> feature_extraction -> (activations of image_mirrored_downsampled and gray_crop inside ResNet50) -> knn using distance_function -> (approximate graph with for each node the distance to its supposed k_neighbor closest matches) -> hdbscan -> (clustered images, outliers) -> reassigning -> (all images clustered)
+
+
+### Features extraction
+
+By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
+
+Therefore, we must define :
+- Which sources of information should be considered? And how should they be weighted?
+- Which metric should be used?
+
+We had to understand the structure of the layers of ResNet50, which are described [here](https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/). We then keep the activations of each convolutional layer (block just means which "step" of the layer we use, and we decided to use the last one for each layer, which is the most "refined" one, but we did not test with any other values).
 
 ### Distance function
 
-We can know start our algorithm. By extracting the right information of ResNet and comparing it between two images, we can get a value that is low if the images are close.
+The set of features we have is: 10 activations layers (5 for the full_image_mirrored_downsampled and 5 for the gray_crop).
 
-Therefore, we must define :
-- Which sources of information should be considered? Especially how should they be weighted?
-- Which metric should be used?
+The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1, which is basically doing <A|B>/(||A||.||B||)
 
-For the layers, we decided to keep the first 5 layers
+As expected, this is very slow and most importantly storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
 
+A GAP vector is simply averaging on all dimensions except the last one.
+If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
 
-
-Wich layers ?
-weights of layers
-Cosine similarity SUR LES MOYENNES
-
-
-### The idea of a Crop
-We ADD a crop information (+5 layers)
-First : uniform crop + expliquer algo optimisé
-After reflection : less uniform ?
-=> comparaisons
+This and the crop scanning optimization allowed us to go from 500 images to 14000 images.
 
 ### KNN
 
@@ -139,7 +143,7 @@ To have less classes, we highly increased k_neighbors and increased a little min
 Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the fact sky was present). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
 
 
-### Résultats
+### Results
 
 
 
