@@ -273,3 +273,10 @@ AI gave us interesting feedbacks for the optimisation algorithm of the crop (we 
 Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the trash. He search on the web and saw that many peoples were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well, so he decided to keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
 
 ## Sources
+
+https://arxiv.org/pdf/2407.08623
+https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/
+https://www.wikiart.org/fr
+Castellano, G., and Vessio, G., Deep learning approaches to pattern extraction and recognition in paintings and drawings: An overview, Neural Computing and Applications, Volume 33, pages 12263–12282, (2021) 
+Wynen, D., Schmid, C., & Mairal, J. (2018). Unsupervised learning of artistic styles with archetypal style analysis. Advances in Neural Information Processing Systems, 31
+
