@@ -7,11 +7,6 @@ The objective of the two methods we implemented is to cluster these unlabelled i
 
 ## Preprocessing
 
-Starting with a dataset, we must define how we want to use it. Assume we have input sizes of size YxY. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
-
-- How can we input images larger than the size of ResNet's input?
-- How can we use images that are not necessarily square?
-
 Both methods use the same preprocessing for images.
 
 We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256\*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
