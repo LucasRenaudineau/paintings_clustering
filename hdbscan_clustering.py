@@ -31,7 +31,6 @@ def knn_to_sparse_distance_matrix(neighbors: np.ndarray, distances: np.ndarray) 
 
     return csr_matrix((dd, (ii, jj)), shape=(n, n), dtype=np.float64)
 
-
 # Noise reassignment (AI used)
 
 def assign_noise_to_nearest_cluster(
@@ -53,7 +52,6 @@ def assign_noise_to_nearest_cluster(
             break
     return labels
 
-
 # Main
 
 def run_hdbscan(
@@ -62,15 +60,15 @@ def run_hdbscan(
     min_cluster_size: int = 5,
     max_cluster_size: int = 200,
     min_samples: int = 1,
-    assign_noise: bool = False,
+    assign_noise: bool = True,
     seed: int = 67,
 ):
     """
     Cluster n randomly selected images with HDBSCAN and save results to:
-        ./outputs/hdbscan_classes/class0/       for images in cluster 0
-        ./outputs/hdbscan_classes/class1/       for images in cluster 1
+        ./outputs/hdbscan_classes/class0/ for images in cluster 0
+        ./outputs/hdbscan_classes/class1/ for images in cluster 1
         ...
-        ./outputs/hdbscan_classes/class_noise/  for leftover noise points
+        ./outputs/hdbscan_classes/class_noise/ for leftover noise points
     Args:
         n                : number of images to sample from the dataset
         n_neighbors      : neighbours per image in the KNN graph; a denser graph
@@ -132,4 +130,4 @@ def run_hdbscan(
 
 
 if __name__ == "__main__":
-    run_hdbscan(n=100, n_neighbors=10, min_cluster_size=5, max_cluster_size=10, min_samples=1)
+    run_hdbscan(n=500, n_neighbors=10, min_cluster_size=2, max_cluster_size=500, min_samples=1, assign_noise=True)
