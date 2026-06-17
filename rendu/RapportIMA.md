@@ -9,7 +9,7 @@ The objective of the two methods we implemented is to cluster these unlabelled i
 
 Both methods use the same preprocessing for images.
 
-We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256\*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
+We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 224\*224 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
 
 - How can we input images larger than the size of ResNet/VGG-19's input?
 - How can we use images that are not necessarily squares?
