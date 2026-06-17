@@ -36,7 +36,7 @@ At first, we used naive scanning on images to find such a crop. This limited our
 
 This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
-## Archetypal Classification
+## Archetypal clustering method
 
 In this section we will discuss our implementation using archetypal classification. Our method implements the paper *Unsupervised Learning of Artistic Styles with Archetypal Style Analysis* from Daan Wynen, Cordelia Schmid and Julien Mairal. The paper covers a method for style transfert using archetypal analysis. For our pupose we will only implement the method to find an image's style without the transfert which will be enough for classification.
 
@@ -81,7 +81,7 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 ****
 
-## Classification via Feature Extraction
+## Graph clustering method
 
 In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try  to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images. 
 
