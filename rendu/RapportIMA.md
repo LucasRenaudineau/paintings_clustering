@@ -195,11 +195,53 @@ After a lot of manual tuning for hyperparameters, here is the first very convinc
 [link to a zip file with the classification of images in 198 classes](https://share.rezel.net/s/lyVHlx9N)
 It had too many classes: 198. But the result was very promising. Note that we got something very interesting. We aimed at detecting style and this classification was almost too precise. It is good at detecting the same painter. For instance, class0 has 16 images, 14 being from the same painter (vasarely).
 
-[link to a zip file with the classification of images in 12 classes]()
+[link to a zip file with the classification of images in 12 classes](https://share.rezel.net/s/Bhk23v59)
 
 With a bit more of tweeking the hyperparameters, we have our final result with 12 classes. For information, around 11000 of our images were originally classed as outliers by hdbscan and were put back by our reassignation function.
 
 This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
+
+#### Some analysis on the 12 classes result
+
+##### Class 0 and class 1
+
+Class 0 and class 1 are both classifying modern art paintings. Class 1 really took the modern art where there are some very distinct forms with each having homogeneous color inside. Here are examples from class 1.
+
+Some images from class 1:
+[albers_17](images/albers_17.jpg)
+[arp_3](images/arp_3.jpg)
+[fromanger_1](images/fromanger_1.jpg)
+
+Here are some images from class 0:
+[arman_8](images/arman_8.jpg)
+[rothko_41](images/rothko_41.jpg)
+
+Somehow, vasarely's very geometric images were put in class 0 and not class 1:
+[vasarely_30](images/vasarely_30.jpg)
+[vasarely_31](images/vasarely_31.jpg)
+
+Interestingly, bonechi's art (from the 20th century) was also detected as modern art with distinct forms, even though it depicts people:
+[bonechi_8](images/bonechi_8.jpg)
+[bonechi_13](images/bonechi_13.jpg)
+
+#### Class 2
+
+Class 2 mixes 2 styles.
+
+The first is a very personal style of Joseph Fleury Crepin inspired by indian art([source](https://fr.wikipedia.org/wiki/Fleury_Joseph_Cr%C3%A9pin)).
+Some examples:
+[crepin_10](images/crepin_10.jpg)
+[crepin_11](images/crepin_11.jpg)
+
+The other style is a religious style highly influenced by the 14th-15th century:
+[monaco_30](images/monaco_30.jpg)
+[del-biondo_6](images/del-biondo_6.jpg)
+
+#### Some other classes
+
+Class 3 is acryllic modern painting.
+Class 9 has an interesting artifact: it detected paintings that have a clear boundary (mainly when the outboundary of the painting is an ellipse).
+We could spend hours trying to guess how images ended up together. Moreover, it is hard to tell, when 2 different styles merged together, if there is a real style link, or if it is just an outlier that ended up in the wrong cathegory and brought all its neighbors from the noise class...
 
 ## AI Use
 
@@ -223,5 +265,6 @@ After generating the archetypes we thought it could be nice to visualize it but 
 ### Concerning Graph clustering method
 
 Like in the archetypal classification, we tried to avoid the use of AI as much as possible to generate the code.
+****
 
 ## Sources
