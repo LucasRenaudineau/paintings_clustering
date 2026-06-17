@@ -17,7 +17,7 @@ We have images of different sizes that share a common maximal dimension size of 
 First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800\*1800. In the following example, it was mirrored down.
 
 [normal image](images/afro_1.jpg)
-[mirrored image](images/afro_1_mirrored.jpg)
+[mirrored image](images/afro_1_squared.jpg)
 
 One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
 
