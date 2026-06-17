@@ -2,16 +2,8 @@
 
 ## Introduction
 
-<<<<<<< Updated upstream
 ArtemisArt dataset is a dataset of around 1450 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
 The objective of the two methods we implemented is to cluster these unlabelled images by styles.
-
-## Preprocessing
-
-=======
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-
----
 
 ## Preprocessing
 
@@ -22,13 +14,11 @@ Starting with a dataset, we must define how we want to use it. Assume we have in
 
 Both methods use the same preprocessing for images.
 
-<<<<<<< Updated upstream
 We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256\*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
 
 - How can we input images larger than the size of ResNet/VGG-19's input?
 - How can we use images that are not necessarily squares?
 
-<<<<<<< Updated upstream
 First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800\*1800. In the following example, it was mirrored down.
 
 [normal image](images/afro_1.jpg)
@@ -210,10 +200,6 @@ It had too many classes: 198. But the result was very promising. Note that we go
 With a bit more of tweeking the hyperparameters, we have our final result with 12 classes. For information, around 11000 of our images were originally classed as outliers by hdbscan and were put back by our reassignation function.
 
 This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
-
-=======
-
-### Résultats
 
 ## AI Use
 
