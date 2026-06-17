@@ -13,8 +13,8 @@ Starting with a dataset, we must define how we want to use it. Assume we have in
 
 We decided to reduce the size of images to fit ResNet's input. Thus, we lose information, but we can still look at the global composition. And later we can crop a part of the image if needed to get local informations. For what is to have a square, knowing that the largest dimension is 1800, we pad the image on the lowest to get a 1800x1800 image before downsampling it to YxY. The goal is to avoid introducing artificial border artefacts that could be falsely used by ResNet on the border. To this end, the padding reflects the image (therefore adding no high frequencies).
 
-
-[IMAGE D'IMAGE MIROIRÉE CARRÉE vs normal]
+[normal image](images/afro_1.jpg)
+[mirrored image](images/afro_1_mirrored.jpg)
 
 
 One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
