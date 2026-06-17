@@ -269,6 +269,10 @@ After generating the archetypes we thought it could be nice to visualize it but 
 
 Like in the archetypal classification, we tried to avoid the use of AI as much as possible to generate the code.
 
----
+AI was used mainly for information purposes, debugging or some occasional repetitive tasks. For instance, when we added 5 layers to take in account the local crop, updating the dimensions in \_LAYER_SPANS with AI save us some time, because it's very easy to do but cumbersome. Or to know the corresponding names of ResNet's layers.
+
+AI gave us interesting feedbacks for the optimisation algorithm of the crop (we could have used internet too ; AI was simply faster). And a proposition to linearise the activations in the cosine similarity function.
+
+Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the trash. He search on the web and saw that many peoples were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well, so he decided to keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
 
 ## Sources
