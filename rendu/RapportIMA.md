@@ -21,20 +21,6 @@ First, we mirror the images as many times as possible to increase the dimension 
 A small detail: we had to remove less than 100 images because they didn't have a maximum dimension of 1800 pixels.
 Then, this 1800*1800 mirrored image is downsampled and then fed into the neural network.
 
-### Crop preprocessing
-
-To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
-
-At first, we used naive scanning on images to find such a crop. This limited our research because it was very long. It was optimized through this algorithm:
-
-- create array S and S2 of the dimensions of the image
-- for increasing i and increasing j:
-    S[i][j]=sum of image[:i,:j]
-    S2[i][j]=sum of image[:i,:j]**2
-- variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
-    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
-
-This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
 ## Archetypal clustering method
 
@@ -120,7 +106,7 @@ This and the crop scanning optimization allowed us to go from 500 images to 1400
 Now that we have a distance function to measure how similar two images are, we will build a graph of distances.
 
 The naive idea is to build a complete graph where each node is an image, and each link is the distance between two images.
-However, we have more than 14 thousand images in the dataset and this algorithm is in O(n**2) with n images. With the distance funciton being quite costly, this is not a solution.
+However, we have more than 14 thousand images in the dataset and this algorithm is in O(n**2) with n images. With the distance function being quite costly, this is not a solution.
 Thus, we use a knn method which builds an approximate graph of the idea we had. Instead of computing all distances, each node keeps only k neighbors, and we expect at the end of the knn algorithm those k neighbors to be the closest nodes from the distance function perspective.
 
 KNN's hyperparameter in k_neighbor
@@ -129,7 +115,7 @@ KNN's hyperparameter in k_neighbor
 
 Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail much this method because we did not implement it as it was already implemented in the library hdbscan.
 
-Hdbscan hyperparameters are min_cluster, max_cluster
+Hdbscan hyperparameters are min_cluster, max_cluster (representing the range of the number of cluster we are looking for) and k_neighbor (every painting is linked to exactly k_neighbor neighbors in the graph).
 
 Hdbscan also puts outliers in a class labeled as noise. After hdbscan's classification, we give each outlier the class of its closest classified neighbor.
 
@@ -140,8 +126,24 @@ When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 9
 However, with both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
 To have less classes, we highly increased k_neighbors and increased a little min_cluster, until we could get a good amount of classes (between 10 and 50).
 
-Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the fact sky was present). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
+Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the sky presence influencing the cluster's composition). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
 
+
+
+### Crop preprocessing
+
+To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
+
+At first, we used naive scanning on images to find such a crop. This limited our research because it was very long. It was optimized through this algorithm:
+
+- create array S and S2 of the dimensions of the image
+- for increasing i and increasing j:
+    S[i][j]=sum of image[:i,:j]
+    S2[i][j]=sum of image[:i,:j]**2
+- variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
+    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
+
+This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
 ### Results
 
