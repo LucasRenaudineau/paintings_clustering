@@ -120,24 +120,24 @@ The function we used is a weighted sum of cosine dissimilarity for layers activa
 We can already test our distance function to see if it is detecting similar images with low distance and non similar images with high distance.
 Here is the reference image:
 
-[reference_image](image/afro_1.jpg)
+[reference_image](images/afro_1.jpg)
 
 Distances to the reference image:
 
 10e-6 (almost 0, as expected):
-[reference_image](image/afro_1.jpg)
+[reference_image](images/afro_1.jpg)
 
 0.37
-[afro_3](image/afro_3.jpg)
+[afro_3](images/afro_3.jpg)
 
 0.34
-[amiet_2](image/amiet_2.jpg)
+[amiet_2](images/amiet_2.jpg)
 
 0.82
-[alechinsky_8](image/alechinsky_8.jpg)
+[alechinsky_8](images/alechinsky_8.jpg)
 
 0.72
-[allori-a_7](image/allori-a_7.jpg)
+[allori-a_7](images/allori-a_7.jpg)
 
 As expected, this is very slow, and most importantly, storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
 
