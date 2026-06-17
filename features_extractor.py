@@ -35,7 +35,7 @@ def load_model():
     except (OSError, IOError, ValueError):
         print(f"No saved model found at {MODEL_PATH}. Downloading ResNet50 with ImageNet weights.")
         model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
-        model.fc = nn.Identity() # include_top=False
+        model.fc = nn.Identity() # include_top=False because we only need convolutional layers
         torch.save(model.state_dict(), MODEL_PATH)
         print(f"Model saved to {MODEL_PATH}")
     model=model.to(device)

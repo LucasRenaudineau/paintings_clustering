@@ -7,7 +7,7 @@ from pathlib import Path
 def cosineSimilarity(activation1, activation2):
     """ 
     Implement the cosine similarity norm.
-    Source : https://arxiv.org/pdf/2407.08623
+    Source used : https://arxiv.org/pdf/2407.08623
              IA used to give the idea to linearise the numpy arrays
     
     Args:
@@ -26,9 +26,6 @@ def cosineSimilarity(activation1, activation2):
     
     return (1-np.dot(act1Flat,act2Flat)/(act1Norm*act2Norm))/2
     
-    
-    
-
 # One weight per activation, in order. Indices 0-4 are the full image (downsampled);
 # indices 5-9 are the most uniform grayscale crop.
 # 0 conv1_relu       full image   (colour)
@@ -49,12 +46,12 @@ def distance(features1, features2):
     """
     Compute the norm with every features of 2 images.
     Sum of every cosineSimilarity of each activation, over both the full image
-    (indices 0-4) and the most uniform crop (indices 5-9).
+    (indices 0-4 in the list) and the most uniform crop (indices 5-9).
 
     Args:
         2 lists of 10 activation NumPy arrays (see extract_all_features):
             0..4 full colour image -> conv1_relu .. conv5_block3_out
-            5..9 uniform grayscale crop -> same layers (texture)
+            5..9 uniform grayscale crop -> same layers
 
     Returns:
         float : value of the distance measure between features1 and features2
@@ -104,6 +101,7 @@ def find_paths(n:int):
 
 # Save the n nearest and n furthest images from the dataset
 def save_nearest_and_furthest_images(image_path, comparedImagesPaths, n, feature_model):
+    """outputs are in ./outputs/n_max and ./outputs/n_min"""
     distances = compute_distances_one_to_many(image_path, comparedImagesPaths, feature_model)
     np_distances = np.array(distances)
     min_indices = np.argpartition(np_distances, n-1)[:n]
