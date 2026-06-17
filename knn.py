@@ -6,14 +6,11 @@ import numpy as np
 import numba
 import random
 
-
-
-def extract_gap_vector(features):
-    """Reduce each activation to its GAP and concatenate -> (7808,) float32."""
+def extract_gap_vector(features): # Cossine dissimilarity measure between raw activations was highly too time-consuming so we used gap
+    """Reduce each activation to its GAP and concatenate"""
     return np.concatenate(
         [f[0].mean(axis=(0, 1)) for f in features]
     ).astype(np.float32)
-
 
 # Used AI for _LAYER_SPANS to convert from using 5 to 10 activations in hdbscan
 
@@ -37,7 +34,7 @@ _LAYER_SPANS = (
 
 @numba.njit
 def _cos_block(a, b, start, end):
-    """Cosine distance in [0, 1] over the channel range [start, end)."""
+    """Cosine distance in [0, 1] over the channel range from start to end)."""
     dot = na = nb = 0.0
     for i in range(start, end):
         dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]
@@ -46,7 +43,7 @@ def _cos_block(a, b, start, end):
 
 @numba.njit
 def my_distance(a, b):
-    """Weighted sum of layer-wise cosine distances on the 7808-dim GAP vector."""
+    """Weighted sum of layer-wise cosine distances on the GAP vector."""
     total = 0.0
     for start, end, w in _LAYER_SPANS:
         total += w * _cos_block(a, b, start, end)
@@ -58,9 +55,9 @@ def my_distance(a, b):
 def run_knn(n: int, n_neighbors: int = 5, seed: int = 42):
     """
     Returns:
-        neighbors  : (n, n_neighbors) int array, neighbor indices in paths
-        distances  : (n, n_neighbors) float array, corresponding distances
-        paths      : list of n selected image paths
+        neighbors : (n, n_neighbors) int array, neighbor indices in paths
+        distances : (n, n_neighbors) float array, corresponding distances
+        paths : list of n selected image paths
     """
     random.seed(seed)
     _, feature_model = load_model()
@@ -76,7 +73,7 @@ def run_knn(n: int, n_neighbors: int = 5, seed: int = 42):
 
     print("Building approximate KNN graph (pynndescent)...")
     index = NNDescent(X, metric=my_distance, n_neighbors=n_neighbors)
-    neighbors, distances = index.neighbor_graph   # (n, k), (n, k)
+    neighbors, distances = index.neighbor_graph # (n, k), (n, k)
 
     print("\nResults:")
     for i, (nn_idx, nn_dist) in enumerate(zip(neighbors, distances)):
