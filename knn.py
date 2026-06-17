@@ -66,10 +66,13 @@ def run_knn(n: int, n_neighbors: int = 5, seed: int = 42):
     paths = random.sample(all_paths, n)
 
     print(f"Extracting features for {n} images...")
-    features_list = [extract_all_features(imread_safe(p), feature_model) for p in paths]
-
-    # Build compact (n, 7808) feature matrix
-    X = np.array([extract_gap_vector(f) for f in features_list])
+    # Reduce each image to its GAP vector immediately so the full spatial
+    # activations are never all held in RAM at once (only one image's worth
+    # exists at a time, then it is discarded once the GAP vector is built).
+    X = np.empty((n, 7808), dtype=np.float32)
+    for i, p in enumerate(paths):
+        features = extract_all_features(imread_safe(p), feature_model)
+        X[i] = extract_gap_vector(features)
 
     print("Building approximate KNN graph (pynndescent)...")
     index = NNDescent(X, metric=my_distance, n_neighbors=n_neighbors)
