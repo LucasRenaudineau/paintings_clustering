@@ -92,9 +92,9 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 ## Graph clustering method
 
-In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images.
+In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try to get small details on the painting, such as the colors used or the brushstroke, details easily extracted with deep learning already trained on many images.
 
-In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
+In this part, we will use ResNet50 to achieve this task. Its inputs size is 224x224. For now, we will only use the global image. Later we will look at more local features with a crop.
 
 ### Pipeline
 
@@ -106,8 +106,9 @@ By extracting the right information of ResNet and comparing it between two image
 
 Therefore, we must define :
 
-- Which sources of information should be considered? Especially how should they be weighted?
+- Which sources of information should be considered?
 - Which metric should be used?
+- How to weight the different features we extract?
 
 We had to understand the structure of the layers of ResNet50, which are described [here](https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/). We then keep the activations of each convolutional layer (block just means which "step" of the layer we use, and we decided to use the last one for each layer, which is the most "refined" one, but we did not test with any other values).
 
@@ -115,7 +116,7 @@ We had to understand the structure of the layers of ResNet50, which are describe
 
 The set of features we have is: 10 activations layers (5 for the full_image_mirrored_downsampled and 5 for the gray_crop).
 
-The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1, which is basically doing <A|B>/(||A||.||B||)
+The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1. A cossine dissimilarity measure on a vector is basically doing 1 - <A|B>/(||A||.||B||)
 We can already test our distance function to see if it is detecting similar images with low distance and non similar images with high distance.
 Here is the reference image:
 
@@ -123,7 +124,7 @@ Here is the reference image:
 
 Distances to the reference image:
 
-10e-6 (almost 0):
+10e-6 (almost 0, as expected):
 [reference_image](image/afro_1.jpg)
 
 0.37
@@ -138,10 +139,10 @@ Distances to the reference image:
 0.72
 [allori-a_7](image/allori-a_7.jpg)
 
-As expected, this is very slow and most importantly storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
+As expected, this is very slow, and most importantly, storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
 
 A GAP vector is simply averaging on all dimensions except the last one.
-If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
+If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64).
 
 This and the crop scanning optimization we'll talk about later allowed us to go from 500 images to 14000 images.
 
@@ -150,29 +151,31 @@ This and the crop scanning optimization we'll talk about later allowed us to go 
 Now that we have a distance function to measure how similar two images are, we will build a graph of distances.
 
 The naive idea is to build a complete graph where each node is an image, and each link is the distance between two images.
-
-However, we have more than 14 thousand images in the dataset and this algorithm is in O(n\*\*2) with n images. With the distance funciton being quite costly, this is not a solution.
+However, we have more than 14 thousand images in the dataset and this algorithm is in O(n\*\*2) with n images. With the distance function being quite costly, this is not a solution.
 
 Thus, we use a knn method which builds an approximate graph of the idea we had. Instead of computing all distances, each node keeps only k neighbors, and we expect at the end of the knn algorithm those k neighbors to be the closest nodes from the distance function perspective.
 
-KNN's hyperparameter in k_neighbor
+KNN's hyperparameter in k_neighbor.
 
 ### HDBSCAN
 
-Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail much this method because we did not implement it as it was already implemented in the library hdbscan.
+Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail this method because we did not implement it as it was already implemented in the library hdbscan.
 
-Hdbscan hyperparameters are min_cluster, max_cluster (representing the range of the number of cluster we are looking for) and k_neighbor (every painting is linked to exactly k_neighbor neighbors in the graph).
+Hdbscan hyperparameters are min_cluster and max_cluster (which are the min and max images inside of the same cluster).
 
 Hdbscan also puts outliers in a class labeled as noise. After hdbscan's classification, we give each outlier the class of its closest classified neighbor.
 
 ### TUNING HYPERPARAMETERS
 
 We had to tune the hyperparameters a little.
-When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 90% of the database as noisy.
-However, with both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
+
+At first, hdbscan was classifying about 10% of the images we fed him with. And the reattribution after hdbscan was quite terrible and gave very bad results: outliers were forced to have a class that is too far from them. We dropped the reclassification and tried to improve the first classification. When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 90% of the database as noisy.
+
+The only way to get over 50% of images classified was to allow clusters with a very small amount of images. However, we found out that reattribution worked well when we had small clusters.
+With both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
 To have less classes, we highly increased k_neighbors and increased a little min_cluster, until we could get a good amount of classes (between 10 and 50).
 
-Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the sky presence influencing the cluster's composition). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
+Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like having clusters entirely made of paintings with a sky in the background). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
 
 ### Crop preprocessing
 
