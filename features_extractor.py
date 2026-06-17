@@ -62,11 +62,11 @@ def extract_features(image, feature_model):
     """
     Returns:
         Array mapping each layer name in order to its activation NumPy array.
-            0  -> (1, 112, 112, 64)      (conv1_relu)
-            1  -> (1, 56, 56, 256)       (conv2_block3_out)
-            2  -> (1, 28, 28, 512)       (conv3_block4_out)
-            3  -> (1, 14, 14, 1024)      (conv4_block6_out)
-            4  -> (1, 7, 7, 2048)        (conv5_block3_out)
+            0  -> (1, 112, 112, 64) (conv1_relu)
+            1  -> (1, 56, 56, 256) (conv2_block3_out)
+            2  -> (1, 28, 28, 512) (conv3_block4_out)
+            3  -> (1, 14, 14, 1024) (conv4_block6_out)
+            4  -> (1, 7, 7, 2048) (conv5_block3_out) # These are the names of the layers of resnet50, see [here](https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/)
     """
     return _run_feature_model(preprocessing_image(image), feature_model)
 
@@ -80,8 +80,8 @@ def extract_crop_features(image, feature_model):
 
 def extract_all_features(image, feature_model):
     """
-        0..4  -> full-image activations    (conv1_relu .. conv5_block3_out), colour
-        5..9  -> uniform-crop activations  (same layers), grayscale texture
+        0..4 -> full-image activations (conv1_relu .. conv5_block3_out), colour
+        5..9 -> uniform-crop activations (same layers), grayscale texture
     """
     return extract_features(image, feature_model) + extract_crop_features(image, feature_model)
 
