@@ -2,19 +2,16 @@
 
 ## Introduction
 
-ArtemisArt dataset is a dataset of around 1450 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
+ArtemisArt dataset is a dataset of around 14500 images from wikiArt where images are colorful .jpg pictures of paintings. All images have a common maximal dimension size of 1800 pixels (height or width).
 The objective of the two methods we implemented is to cluster these unlabelled images by styles.
+
+Link to the code of the project: https://github.com/LucasRenaudineau/paintings_clustering
 
 ## Preprocessing
 
-Starting with a dataset, we must define how we want to use it. Assume we have input sizes of size YxY. What we know of our dataset is that it is composed of images with their highest dimension being 1800. This raises two qustions:
-
-- How can we input images larger than the size of ResNet's input?
-- How can we use images that are not necessarily square?
-
 Both methods use the same preprocessing for images.
 
-We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 256\*256 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
+We have images of different sizes that share a common maximal dimension size of 1800 pixels (height or width). Both methods use a convolutional neural network with entry size 224\*224 (ResNet50 and VGG-19). 2 problems arised for preprocessing different images from the dataset:
 
 - How can we input images larger than the size of ResNet/VGG-19's input?
 - How can we use images that are not necessarily squares?
@@ -22,9 +19,11 @@ We have images of different sizes that share a common maximal dimension size of 
 First, we mirror the images as many times as possible to increase the dimension of its smaller size, until it is greater than 1800. Then we crop it 1800\*1800. In the following example, it was mirrored down.
 
 [normal image](images/afro_1.jpg)
-[mirrored image](images/afro_1_mirrored.jpg)
+[mirrored image](images/afro_1_squared.jpg)
 
 One last thing we had to take care of, was to address the few images that were not corresponding to this rule of "maximum dimension is 1800". It does apply to a very few number of images (it's a harmless mistake of the dataset), so we decided to get rid of them.
+
+Then, the 1800\*1800 image is downsampled to feed it into the neural network.
 
 ## Archetypal Classification
 
@@ -95,9 +94,9 @@ Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapi
 
 ## Graph clustering method
 
-In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try to get small details on the painting, such as the colors used or the brushstroke, details easily extract with deep learning already trained on many images.
+In this section, we will implement another way to make clustering. The idea is to use the power of neural networks to extract relevant features on the image. Typically, we can try to get small details on the painting, such as the colors used or the brushstroke, details easily extracted with deep learning already trained on many images.
 
-In this part, we will use ResNet50 to achieve this task. It is a powerful CNN, easy to use and largely used in the industry these days. Its inputs size is 224x224, thus we adapted the preprocessing step with size 224x224. For know, we will only use the global image, later we will look at local features thanks to a crop.
+In this part, we will use ResNet50 to achieve this task. Its inputs size is 224x224. For now, we will only use the global image. Later we will look at more local features with a crop.
 
 ### Pipeline
 
@@ -109,8 +108,9 @@ By extracting the right information of ResNet and comparing it between two image
 
 Therefore, we must define :
 
-- Which sources of information should be considered? Especially how should they be weighted?
+- Which sources of information should be considered?
 - Which metric should be used?
+- How to weight the different features we extract?
 
 We had to understand the structure of the layers of ResNet50, which are described [here](https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/). We then keep the activations of each convolutional layer (block just means which "step" of the layer we use, and we decided to use the last one for each layer, which is the most "refined" one, but we did not test with any other values).
 
@@ -118,33 +118,33 @@ We had to understand the structure of the layers of ResNet50, which are describe
 
 The set of features we have is: 10 activations layers (5 for the full_image_mirrored_downsampled and 5 for the gray_crop).
 
-The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1, which is basically doing <A|B>/(||A||.||B||)
+The function we used is a weighted sum of cosine dissimilarity for layers activations 1 to 1. A cossine dissimilarity measure on a vector is basically doing 1 - <A|B>/(||A||.||B||)
 We can already test our distance function to see if it is detecting similar images with low distance and non similar images with high distance.
 Here is the reference image:
 
-[reference_image](image/afro_1.jpg)
+[reference_image](images/afro_1.jpg)
 
 Distances to the reference image:
 
-10e-6 (almost 0):
-[reference_image](image/afro_1.jpg)
+10e-6 (almost 0, as expected):
+[reference_image](images/afro_1.jpg)
 
 0.37
-[afro_3](image/afro_3.jpg)
+[afro_3](images/afro_3.jpg)
 
 0.34
-[amiet_2](image/amiet_2.jpg)
+[amiet_2](images/amiet_2.jpg)
 
 0.82
-[alechinsky_8](image/alechinsky_8.jpg)
+[alechinsky_8](images/alechinsky_8.jpg)
 
 0.72
-[allori-a_7](image/allori-a_7.jpg)
+[allori-a_7](images/allori-a_7.jpg)
 
-As expected, this is very slow and most importantly storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
+As expected, this is very slow, and most importantly, storing the full activations for 14 thousand images is not realistic. Inspired by what was done on the other method, we later changed it to a cossine dissimilarity measure on the means on GAP vectors of the activations.
 
 A GAP vector is simply averaging on all dimensions except the last one.
-If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64,).
+If a vector has dimension (1, 112, 112, 64), its gap vector has dimension (64).
 
 This and the crop scanning optimization we'll talk about later allowed us to go from 500 images to 14000 images.
 
@@ -153,42 +153,44 @@ This and the crop scanning optimization we'll talk about later allowed us to go 
 Now that we have a distance function to measure how similar two images are, we will build a graph of distances.
 
 The naive idea is to build a complete graph where each node is an image, and each link is the distance between two images.
-
-However, we have more than 14 thousand images in the dataset and this algorithm is in O(n\*\*2) with n images. With the distance funciton being quite costly, this is not a solution.
+However, we have more than 14 thousand images in the dataset and this algorithm is in O(n\*\*2) with n images. With the distance function being quite costly, this is not a solution.
 
 Thus, we use a knn method which builds an approximate graph of the idea we had. Instead of computing all distances, each node keeps only k neighbors, and we expect at the end of the knn algorithm those k neighbors to be the closest nodes from the distance function perspective.
 
-KNN's hyperparameter in k_neighbor
+KNN's hyperparameter in k_neighbor.
 
 ### HDBSCAN
 
-Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail much this method because we did not implement it as it was already implemented in the library hdbscan.
+Now that we have an approximate graph of distances, we would like to cluster the nodes of the graph. To do so, we use hdbscan, which is a technique based on cutting branches of a covering tree (obtained by Kruskal algorithm). We won't detail this method because we did not implement it as it was already implemented in the library hdbscan.
 
-Hdbscan hyperparameters are min_cluster, max_cluster (representing the range of the number of cluster we are looking for) and k_neighbor (every painting is linked to exactly k_neighbor neighbors in the graph).
+Hdbscan hyperparameters are min_cluster and max_cluster (which are the min and max images inside of the same cluster).
 
 Hdbscan also puts outliers in a class labeled as noise. After hdbscan's classification, we give each outlier the class of its closest classified neighbor.
 
 ### TUNING HYPERPARAMETERS
 
 We had to tune the hyperparameters a little.
-When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 90% of the database as noisy.
-However, with both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
+
+At first, hdbscan was classifying about 10% of the images we fed him with. And the reattribution after hdbscan was quite terrible and gave very bad results: outliers were forced to have a class that is too far from them. We dropped the reclassification and tried to improve the first classification. When k_neighbor is too small and min_cluster is too high, hdbscan tends to put 90% of the database as noisy.
+
+The only way to get over 50% of images classified was to allow clusters with a very small amount of images. However, we found out that reattribution worked well when we had small clusters.
+With both min_cluster small and k_neighbor small, we ended up with 200 classes, and basically the outputs was almost a classification by painter (which was quite efficient).
 To have less classes, we highly increased k_neighbors and increased a little min_cluster, until we could get a good amount of classes (between 10 and 50).
 
-Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like the sky presence influencing the cluster's composition). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
+Regarding the weights of the distance, when far layers where given too much weight, classification was only made based on appearance of persons. When the weights were too high for the crop, it was highly influenced by the environment (like having clusters entirely made of paintings with a sky in the background). However, the goal of the project is to cluster regarding style. Thus, we gave the best weights to the 2 first layers of the full image, which gave the best performances.
 
 ### Crop preprocessing
 
-To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect for instance texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
+To add some information, in the hdbscan method, we also used a second preprocessing of the image. We searched for a cropped version of the image that was the most uniform possible. The objective was to efficiently and easily detect textures that are a good marker for some very specific styles such as modern art (that often have very uniformed monochromatic region), or detect texture of the pencil the painter used. We concluded it was useful when not given a lot of importance in the process (low weights), and using the most uniformed crop was more useful than using the one with the most information in it.
 
 At first, we used naive scanning on images to find such a crop. This limited our research because it was very long. It was optimized through this algorithm:
 
 - create array S and S2 of the dimensions of the image
 - for increasing i and increasing j:
-  S[i][j]=sum of image[:i,:j]
-  S2[i][j]=sum of image[:i,:j]\*\*2
+    S[i][j]=sum of image[:i,:j]
+    S2[i][j]=sum of image[:i,:j]\*\*2
 - variance of crop (i0, j0, i1, j1) where (i0, j0) is the top left corner and (i1, j1) is the bottom right corner is computed by the König Huygens formula for variance:
-  S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]**2-S[i1,j1]**2+S[i1,j0]**2+S[i0,j1]**2
+    S2[i0,j0]+s2[i1,j1]-S2[i0,j1]-S2[i1,j0] - S[i0,j0]\*\*2-S[i1,j1]\*\*2+S[i1,j0]\*\*2+S[i0,j1]\*\*2
 
 This gave too much importance to presence of a color in a painting, so we changed a bit and turned the crop in a black and white image.
 
@@ -203,7 +205,7 @@ It had too many classes: 198. But the result was very promising. Note that we go
 
 With a bit more of tweeking the hyperparameters, we have our final result with 12 classes. For information, around 11000 of our images were originally classed as outliers by hdbscan and were put back by our reassignation function.
 
-This result is satisfying. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see that ti merged multiple coherent different styles.
+This result satisfies the objectives of the project. The number of clusters is a bit too small, it looks like some clusters should be separated in two or three groups. But it is still interesting to see what different styles it merged together. With more time, we could also have made a PCA for the center of all those clusters, to see how linked they are together.
 
 #### Some analysis on the 12 classes result
 
@@ -245,7 +247,8 @@ The other style is a religious style highly influenced by the 14th-15th century:
 
 Class 3 is acryllic modern painting.
 Class 9 has an interesting artifact: it detected paintings that have a clear boundary (mainly when the outboundary of the painting is an ellipse).
-We could spend hours trying to guess how images ended up together. Moreover, it is hard to tell, when 2 different styles merged together, if there is a real style link, or if it is just an outlier that ended up in the wrong cathegory and brought all its neighbors from the noise class...
+
+We could spend hours trying to guess how images ended up together. Moreover, it is hard to tell, when 2 different styles merged together, if there is a real style link, or if it is just an outlier that ended up in the wrong cathegory and brought all of its neighbors from the noise class...
 
 ## AI Use
 
@@ -271,8 +274,15 @@ Like in the archetypal classification, we tried to avoid the use of AI as much a
 
 AI was used mainly for information purposes, debugging or some occasional repetitive tasks. For instance, when we added 5 layers to take in account the local crop, updating the dimensions in \_LAYER_SPANS with AI save us some time, because it's very easy to do but cumbersome. Or to know the corresponding names of ResNet's layers.
 
-AI gave us interesting feedbacks for the optimisation algorithm of the crop (we could have used internet too ; AI was simply faster). And a proposition to linearise the activations in the cosine similarity function.
+AI gave us interesting feedbacks for the optimisation algorithm of the crop. And a proposition to linearise the activations in the cosine similarity function.
 
-Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the trash. He search on the web and saw that many peoples were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well, so he decided to keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
+Finally, one unfortunate event happend when a member of the team broke down regarding 80% of the paintings being clustered in the noise class for the 100th time... He searched on the web and saw that many people were having the same issues. He thought to reclustered images based on the links, yet he thought it would not work. To test, he entirely generated the function assign_noise_to_nearest_cluster with AI. However, this function was working well (not at first, but with decreasing min_cluster it revealed useful), so he decided to eventually keep it. This is the only not-really-legit function, we humbly beg your forgiveness for this regrettable event...
 
 ## Sources
+
+https://arxiv.org/pdf/2407.08623
+https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/
+https://www.wikiart.org/fr
+Castellano, G., and Vessio, G., Deep learning approaches to pattern extraction and recognition in paintings and drawings: An overview, Neural Computing and Applications, Volume 33, pages 12263–12282, (2021) 
+Wynen, D., Schmid, C., & Mairal, J. (2018). Unsupervised learning of artistic styles with archetypal style analysis. Advances in Neural Information Processing Systems, 31
+https://fr.wikipedia.org/wiki/Fleury_Joseph_Cr%C3%A9pin
