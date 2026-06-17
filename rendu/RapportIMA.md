@@ -63,7 +63,29 @@ Another visualisation we added was to project the archetypes and paintings on a 
 
 ### Archetype Clustering
 
-Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+Now that we have generated the archetypes, we need to clusterize them. Indeed, one archetype does not correspond to a proper style, but multiple ones can represent an art style. This is what motivates us for clustering.
+
+We generate a lot of archetypes, for our case, it is 256. We then group them into clusters, each cluster defining an artstyle.
+
+The clustering pipeline is the following :
+
+```mermaid
+flowchart LR
+
+    A[Z : archetypes embedding <br>nb_archetypes x 512]
+        --> B[UMAP<br>dimensionality reduction<br>]
+
+    B --> C[Z_reduc<br>reduced vector <br>nb_archetypes x d]
+
+    C --> D[HDBSCAN<br>clustering with unknown k<br>min_cluster_size=5, min_samples=1]
+
+    D --> E[Final labels<br>clusters and noise]
+```
+
+- Dimension reduction : We have a vector of high dimensionality `(n_archetypes, 512)` so we perform the UMAP dimensionality reduction.
+- Clustering with unkown number of clusters : using HDBSCAN, we perform the clustering on the reduced vector.
+
+With that, we have everything ready for the classification of paintings.
 
 ### Results
 
@@ -241,12 +263,12 @@ After generating the archetypes we thought it could be nice to visualize it but 
 
 **AI was also used to help understanding the issues with redundancy in images contributing to archetypes but the implementations were done by hand. (Passage en gras à enlever/modifier selon le paragraphe plus haut)**
 
-
 ---
 
 ### Concerning Graph clustering method
 
 Like in the archetypal classification, we tried to avoid the use of AI as much as possible to generate the code.
-****
+
+---
 
 ## Sources

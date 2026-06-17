@@ -164,8 +164,9 @@ class ArchetypeGenerator:
             if len(batch) < n_components:
                 continue
             batch_data = [np.load(f) for f in batch]
-            ipca.partial_fit(batch_data)
-            del batch_data
+            batch_data_scaled = scaler.transform(batch_data)
+            ipca.partial_fit(batch_data_scaled)
+            del batch_data, batch_data_scaled
 
         # Transforming the data via Incremental PCA
         print("Starting transformation of the data via IncrementalPCA...")
@@ -173,9 +174,10 @@ class ArchetypeGenerator:
         for i in tqdm(range(0, n_samples, 512)):
             batch = features_files[i : i + 512]
             batch_data = [np.load(f) for f in batch]
-            X_batch_transformed = ipca.transform(batch_data)
+            batch_data_scaled = scaler.transform(batch_data)
+            X_batch_transformed = ipca.transform(batch_data_scaled)
             X_transformed_list.append(X_batch_transformed)
-            del batch_data
+            del batch_data, batch_data_scaled
         X = np.vstack(X_transformed_list)
         print(f"shape of X : {X.shape}")
         self.X = X
@@ -209,7 +211,8 @@ class ArchetypeGenerator:
         if m != 1800:
             raise ValueError("Longest dimension is not of size 1800")
         x_raw = self.transform(img).reshape(1, -1)
-        x_raw_reduced = self.ipca.transform(x_raw)
+        x_raw_scaled = self.scaler.transform(x_raw)
+        x_raw_reduced = self.ipca.transform(x_raw_scaled)
         return self.archetype.transform(x_raw_reduced)
 
     def classify_hard(self, x: str):
