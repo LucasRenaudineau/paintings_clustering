@@ -283,4 +283,4 @@ https://deeplearning.cms.waikato.ac.nz/user-guide/model-zoo/keras/KerasResNet50/
 https://www.wikiart.org/fr
 Castellano, G., and Vessio, G., Deep learning approaches to pattern extraction and recognition in paintings and drawings: An overview, Neural Computing and Applications, Volume 33, pages 12263–12282, (2021) 
 Wynen, D., Schmid, C., & Mairal, J. (2018). Unsupervised learning of artistic styles with archetypal style analysis. Advances in Neural Information Processing Systems, 31
-
+https://fr.wikipedia.org/wiki/Fleury_Joseph_Cr%C3%A9pin
