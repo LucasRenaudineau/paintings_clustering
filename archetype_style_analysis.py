@@ -295,9 +295,9 @@ if __name__ == "__main__":
         a = ArchetypeGenerator(n_archetype, paths, device, feature_extractor)
         A, B, Z, pca_mod, scaler = a.find_archetypes()
 
-        # print(f"Voila la forme de A : {A}\n")
-        # print(f"Voila la forme de B : {B}\n")
-        # print(f"Voila la forme de Z : {Z}\n")
+        print(f"Voila la forme de A : {A}\n")
+        print(f"Voila la forme de B : {B}\n")
+        print(f"Voila la forme de Z : {Z}\n")
 
         print("Soft classifier")
         print(a.classify_soft("ArtemisArt/blake - william-blake_1827/blake_1.jpg"))
@@ -308,33 +308,28 @@ if __name__ == "__main__":
         print("Paintings from archetype")
         print(a.getPaintingsFromArchetype(0))
 
-        # On choisit l'Archétype 0
-        # Z_arch_0 = Z[0]
+        images_synthetisees = [
+            synthetiser_archetype(
+                Z_archetype=Z[i],
+                pca_model=pca_mod,
+                scaler_model=scaler,
+                extractor=feature_extractor,
+                device=device,
+                n_iteration=500,
+            )
+            for i in range(n_archetype)
+        ]
 
-        # # Et on lance !
-        # images_synthetisees = [
-        #     synthetiser_archetype(
-        #         Z_archetype=Z[i],
-        #         pca_model=pca_mod,
-        #         scaler_model=scaler,
-        #         extractor=feature_extractor,
-        #         device=device,
-        #         n_iteration=500,
-        #     )
-        #     for i in range(1)
-        # ]
-
-        # for i in range(1):
-        #     plt.imshow(images_synthetisees[i])
-        #     plt.axis("off")
-        #     # plt.title(f"L'essence de l'Archétype {i}")
-        #     plt.savefig(
-        #         f"archetypes/archetype_{cur_archetype}.png",
-        #         bbox_inches="tight",
-        #         dpi=300,
-        #     )
-        #     print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
-        #     cur_archetype += 1
+        for i in range(n_archetype):
+            plt.imshow(images_synthetisees[i])
+            plt.axis("off")
+            plt.savefig(
+                f"archetypes/archetype_{cur_archetype}.png",
+                bbox_inches="tight",
+                dpi=300,
+            )
+            print(f"Image sauvegardée sous le nom 'archetype_{cur_archetype}.png' !")
+            cur_archetype += 1
         print("Starting UMAP visualisation...")
         visualisation_2d(a.X, Z, a.data_path)
 
