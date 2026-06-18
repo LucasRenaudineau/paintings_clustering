@@ -22,11 +22,11 @@ Outputs for examples and showcases are sent to ./outputs/
 
 Files used for this method are:
 
-- preprocessing.py
-- archetype_visualisation.py
-- archetype_clustering.py
-- archetype_style_analysis.py
-- main_archetype.ipynb
+- preprocessing.py (preprocesses the image into a 1800*1800 image mirrored, then produces two images : downscaled image 224*224, most uniform crop of size 224*224 grayish)
+- archetype_visualisation.py (implements two features : one to visualize archetypes as images to see the proximity to the paintnigs and the other to project archetypes and paintings on a 2D plane using UMAP to have another way to verify similarities)
+- archetype_clustering.py (implements clustering on the archetypes to then classify paintings)
+- archetype_style_analysis.py (generates archetypes using the pipline developped in the paper [Unsupervised Learning of Artistic Styles with Archetypal Style Analysis](https://arxiv.org/pdf/1805.11155), it also has some tests at the end of the file with __name__ = '__main__' to try the methods)
+- main_archetype.ipynb (notebook that uses every other python file to test the full pipeline)
 
 ## 2nd method : Graph method
 
