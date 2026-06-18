@@ -96,9 +96,17 @@ Here is a map showing the archetypes in the UMAP projection (the gray dots are t
 ![](umap_projection_archetypes.png)
 
 The clustering of archetypes gave 25 clusters + noise. Here are some examples of clusters, we have obtained some good results.
-%insert images
+![](cluster0.jpg)
+![](cluster1.jpg) % make these two images in the same row.
 
 Now here are some examples of archetypes and their biggest contributor.
+![](generation_archetype.jpg)
+
+However, we still find the problem of one image being responsible for multiple archetypes.
+![](generation_bad_example.jpg)
+
+Finally, with these 25 clusters of archetypes, we can find our final classification of paintings, here are some examples :
+![](images_cluster16.jpg)
 
 ---
 
